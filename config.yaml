@@ -1,0 +1,60 @@
+# ─────────────────────────────────────────────────────────
+#  LLM-RedTeam — Configuration File
+#  Docs: docs/ARCHITECTURE.md
+# ─────────────────────────────────────────────────────────
+
+# ── Target: the LLM application you are testing ──────────
+target:
+  type: ollama              # ollama | openai | anthropic | http | rag
+
+  # Ollama (local, free, no API key)
+  model: llama3
+  base_url: http://localhost:11434
+
+  # OpenAI / Anthropic (set api_key here or via env var)
+  # model: gpt-4o-mini
+  # base_url: https://api.openai.com
+  # api_key: null           # or set OPENAI_API_KEY / ANTHROPIC_API_KEY env vars
+
+  # Generic HTTP endpoint
+  # endpoint: http://localhost:8080/chat
+  # request_template: '{"message": "$prompt"}'
+  # response_field: reply
+
+  # System prompt of the application under test
+  system_prompt: "You are a helpful customer support assistant. Be concise and professional."
+
+  # Request timeout in seconds
+  timeout: 60
+
+# ── Attack suites to run ──────────────────────────────────
+# Available: jailbreak | injection | exfiltration | indirect_injection | multi_turn
+suites:
+  - jailbreak
+  - injection
+  - exfiltration
+  # - indirect_injection    # requires rag target or rag_target.py wrapping
+  # - multi_turn
+
+# ── Rate limiting ─────────────────────────────────────────
+rate_limit:
+  delay_seconds: 1.0        # pause between each payload (prevents hammering free-tier APIs)
+
+# ── Scoring engine ────────────────────────────────────────
+scoring:
+  # heuristic: keyword matching only (fast, free, no extra API calls)
+  # llm_judge: use a judge LLM to evaluate every response (accurate, costs tokens)
+  # both:      heuristic first; call judge only for ambiguous PARTIAL_LEAK verdicts
+  mode: heuristic
+
+  judge:
+    type: ollama             # ollama | openai
+    model: llama3
+    base_url: http://localhost:11434
+    # api_key: null          # only needed for openai judge
+
+# ── Output ────────────────────────────────────────────────
+output:
+  format: both               # cli | html | json | both
+  reports_dir: ./reports
+  open_html: true            # auto-open the HTML report in browser after scan

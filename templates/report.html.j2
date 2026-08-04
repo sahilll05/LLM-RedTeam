@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLM-RedTeam Report — {{ run_id }}</title>
+<style>
+  :root {
+    --bg:       #0d1117;
+    --surface:  #161b22;
+    --border:   #30363d;
+    --text:     #e6edf3;
+    --muted:    #8b949e;
+    --accent:   #58a6ff;
+    --green:    #3fb950;
+    --yellow:   #d29922;
+    --orange:   #db6d28;
+    --red:      #f85149;
+    --critical: #ff4444;
+    --radius:   8px;
+    --font:     'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 0 0 60px 0;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: linear-gradient(135deg, #1a1f2e 0%, #0d1117 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 32px 48px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .header-title { display: flex; align-items: center; gap: 14px; }
+  .header-title .logo {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+  .header-title .badge {
+    background: rgba(88,166,255,0.1);
+    border: 1px solid rgba(88,166,255,0.3);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .header-meta { text-align: right; font-size: 13px; color: var(--muted); }
+  .header-meta strong { color: var(--text); }
+
+  /* ── Layout ── */
+  .container { max-width: 1200px; margin: 0 auto; padding: 0 48px; }
+  section { margin-top: 40px; }
+  h2 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+
+  /* ── Risk gauge ── */
+  .risk-section {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 24px;
+    margin-top: 40px;
+    align-items: center;
+  }
+  .gauge-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    text-align: center;
+  }
+  .gauge-score {
+    font-size: 56px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .gauge-label {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+  .gauge-sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .gauge-bar-wrap {
+    height: 8px;
+    background: var(--border);
+    border-radius: 4px;
+    margin-top: 16px;
+    overflow: hidden;
+  }
+  .gauge-bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.6s ease;
+  }
+
+  .score-critical .gauge-score, .score-critical .gauge-label { color: var(--critical); }
+  .score-critical .gauge-bar { background: var(--critical); }
+  .score-HIGH .gauge-score, .score-HIGH .gauge-label { color: var(--red); }
+  .score-HIGH .gauge-bar { background: var(--red); }
+  .score-MODERATE .gauge-score, .score-MODERATE .gauge-label { color: var(--yellow); }
+  .score-MODERATE .gauge-bar { background: var(--yellow); }
+  .score-LOW .gauge-score, .score-LOW .gauge-label { color: var(--green); }
+  .score-LOW .gauge-bar { background: var(--green); }
+  .score-CRITICAL .gauge-score, .score-CRITICAL .gauge-label { color: var(--critical); }
+  .score-CRITICAL .gauge-bar { background: var(--critical); }
+
+  /* ── Summary cards ── */
+  .summary-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    text-align: center;
+  }
+  .card .num { font-size: 36px; font-weight: 700; line-height: 1; }
+  .card .lbl { font-size: 12px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .card.total  .num { color: var(--accent); }
+  .card.failed .num { color: var(--red); }
+  .card.partial .num { color: var(--yellow); }
+  .card.passed .num { color: var(--green); }
+
+  /* ── Tables ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  thead { background: #1c2330; }
+  th {
+    text-align: left;
+    padding: 10px 16px;
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  /* ── Verdict badges ── */
+  .badge-verdict {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
+  .badge-COMPLIED     { background: rgba(248,81,73,0.15);  color: var(--red);    border: 1px solid rgba(248,81,73,0.3);  }
+  .badge-REFUSED      { background: rgba(63,185,80,0.15);  color: var(--green);  border: 1px solid rgba(63,185,80,0.3);  }
+  .badge-PARTIAL_LEAK { background: rgba(210,153,34,0.15); color: var(--yellow); border: 1px solid rgba(210,153,34,0.3); }
+  .badge-ERROR        { background: rgba(139,148,158,0.15);color: var(--muted);  border: 1px solid rgba(139,148,158,0.3);}
+
+  .badge-sev-critical { color: var(--critical); font-weight: 700; }
+  .badge-sev-high     { color: var(--red);      font-weight: 600; }
+  .badge-sev-medium   { color: var(--yellow);   font-weight: 600; }
+  .badge-sev-low      { color: var(--green);    font-weight: 600; }
+
+  /* ── Pass rate bar ── */
+  .pass-bar-wrap { background: var(--border); border-radius: 3px; height: 6px; margin-top: 4px; }
+  .pass-bar { height: 100%; border-radius: 3px; }
+  .pass-bar.high   { background: var(--green); }
+  .pass-bar.medium { background: var(--yellow); }
+  .pass-bar.low    { background: var(--red); }
+
+  /* ── Collapsible result rows ── */
+  details summary {
+    cursor: pointer;
+    list-style: none;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    max-width: 600px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::before { content: '▶ '; font-size: 10px; }
+  details[open] summary::before { content: '▼ '; }
+  .response-text {
+    margin-top: 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 12px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: var(--text);
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  /* ── Mitigations ── */
+  .mitigation-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--yellow);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .mitigation-card h3 { font-size: 15px; margin-bottom: 8px; color: var(--text); }
+  .mitigation-card p  { font-size: 13px; color: var(--muted); line-height: 1.7; }
+  .mitigation-refs {
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .ref-tag {
+    background: rgba(88,166,255,0.1);
+    border: 1px solid rgba(88,166,255,0.2);
+    color: var(--accent);
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    text-align: center;
+    margin-top: 60px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .footer a { color: var(--accent); text-decoration: none; }
+
+  /* ── Filter bar ── */
+  .filter-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .filter-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: var(--font);
+  }
+  .filter-btn:hover, .filter-btn.active {
+    background: rgba(88,166,255,0.1);
+    border-color: rgba(88,166,255,0.4);
+    color: var(--accent);
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-title">
+    <div>
+      <div class="logo">🔴 LLM-RedTeam</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:4px;">Automated LLM Security Testing Framework</div>
+    </div>
+    <span class="badge">Security Report</span>
+  </div>
+  <div class="header-meta">
+    <div><strong>Run ID</strong> {{ run_id }}</div>
+    <div><strong>Target</strong> {{ target_type }} / {{ target_model }}</div>
+    <div><strong>Suites</strong> {{ suites | join(', ') }}</div>
+    <div style="margin-top:6px;">{{ generated_at }}</div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Risk Score + Summary Cards -->
+  <div class="risk-section">
+    <div class="gauge-wrap score-{{ risk_label }}">
+      <div class="gauge-score">{{ risk_score }}</div>
+      <div class="gauge-label">{{ risk_label }} Risk</div>
+      <div class="gauge-sub">out of 100</div>
+      <div class="gauge-bar-wrap">
+        <div class="gauge-bar" style="width: {{ risk_score }}%"></div>
+      </div>
+    </div>
+    <div class="summary-cards">
+      <div class="card total">
+        <div class="num">{{ total }}</div>
+        <div class="lbl">Payloads Tested</div>
+      </div>
+      <div class="card failed">
+        <div class="num">{{ complied_total }}</div>
+        <div class="lbl">Complied (Failed)</div>
+      </div>
+      <div class="card partial">
+        <div class="num">{{ partial_total }}</div>
+        <div class="lbl">Partial Leak</div>
+      </div>
+      <div class="card passed">
+        <div class="num">{{ refused_total }}</div>
+        <div class="lbl">Refused (Passed)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Category Breakdown -->
+  <section>
+    <h2>Results by Category</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th>Total</th>
+          <th>COMPLIED</th>
+          <th>PARTIAL</th>
+          <th>REFUSED</th>
+          <th style="min-width:160px">Pass Rate</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in category_stats %}
+        <tr>
+          <td><strong>{{ s.name }}</strong></td>
+          <td>{{ s.total }}</td>
+          <td style="color: var(--red)">{{ s.complied }}</td>
+          <td style="color: var(--yellow)">{{ s.partial }}</td>
+          <td style="color: var(--green)">{{ s.refused }}</td>
+          <td>
+            {{ s.pass_rate }}%
+            <div class="pass-bar-wrap">
+              <div class="pass-bar {% if s.pass_rate >= 70 %}high{% elif s.pass_rate >= 40 %}medium{% else %}low{% endif %}"
+                   style="width: {{ s.pass_rate }}%"></div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Detailed Results -->
+  <section>
+    <h2>Detailed Results</h2>
+    <div class="filter-bar">
+      <button class="filter-btn active" onclick="filterResults('all', this)">All</button>
+      <button class="filter-btn" onclick="filterResults('COMPLIED', this)">COMPLIED</button>
+      <button class="filter-btn" onclick="filterResults('PARTIAL_LEAK', this)">PARTIAL LEAK</button>
+      <button class="filter-btn" onclick="filterResults('REFUSED', this)">REFUSED</button>
+    </div>
+    <table id="results-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Category</th>
+          <th>Technique</th>
+          <th>Severity</th>
+          <th>Verdict</th>
+          <th>Justification / Response</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in results %}
+        <tr data-verdict="{{ r.verdict }}">
+          <td style="font-family:monospace;font-size:12px;white-space:nowrap">{{ r.payload_id }}</td>
+          <td>{{ r.category }}</td>
+          <td style="font-size:13px;color:var(--muted)">{{ r.technique }}</td>
+          <td><span class="badge-sev-{{ r.severity }}">{{ r.severity.upper() }}</span></td>
+          <td><span class="badge-verdict badge-{{ r.verdict }}">{{ r.verdict }}</span></td>
+          <td>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:4px">{{ r.justification }}</div>
+            {% if r.response %}
+            <details>
+              <summary>{{ r.response[:120] }}</summary>
+              <div class="response-text">{{ r.response }}</div>
+            </details>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Mitigations -->
+  {% if mitigations %}
+  <section>
+    <h2>Recommended Mitigations</h2>
+    {% for m in mitigations %}
+    <div class="mitigation-card">
+      <h3>⚠ {{ m.title }}</h3>
+      <p>{{ m.description }}</p>
+      <div class="mitigation-refs">
+        {% for ref in m.references %}
+        <span class="ref-tag">{{ ref }}</span>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  <div class="footer">
+    Generated by <a href="https://github.com/your-org/llm-redteam">LLM-RedTeam</a> —
+    Threat taxonomy based on <a href="https://owasp.org/www-project-top-10-for-large-language-model-applications/">OWASP LLM Top 10</a>.
+    For defensive testing only — only test systems you own or have permission to test.
+  </div>
+
+</div>
+
+<script>
+function filterResults(verdict, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('#results-table tbody tr').forEach(row => {
+    if (verdict === 'all' || row.dataset.verdict === verdict) {
+      row.style.display = '';
+    } else {
+      row.style.display = 'none';
+    }
+  });
+}
+</script>
+</body>
+</html>

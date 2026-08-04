@@ -1,0 +1,41 @@
+MIT License
+
+Copyright (c) 2026 Sahil Powar
+GitHub: https://github.com/sahilll05/LLM-RedTeam
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+───────────────────────────────────────────────────────────────────────────────
+
+IMPORTANT — ETHICAL USE NOTICE
+
+This software is intended solely for defensive security research and testing of
+AI systems that you own or have explicit written permission to test.
+
+By using this software you agree to:
+  1. Only test LLM applications you own or have received explicit written
+     authorisation to security-test.
+  2. Not use this tool to attack, probe, or disrupt production AI systems
+     without a signed security testing agreement.
+  3. Treat all payload files as security research artifacts for defensive
+     purposes — not as an exploit kit.
+  4. Comply with all applicable laws, regulations, and the terms of service
+     of any API or platform you test against.
+
+The authors accept no liability for misuse of this software.
