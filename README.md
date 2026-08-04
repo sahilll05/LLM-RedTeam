@@ -43,7 +43,7 @@ mitigation recommendations.
 ### Install
 
 ```bash
-git clone https://github.com/your-org/llm-redteam.git
+git clone https://github.com/sahilll05/LLM-RedTeam.git
 cd llm-redteam
 pip install -r requirements.txt
 ```
