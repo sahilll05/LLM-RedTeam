@@ -54,19 +54,19 @@ pip install -r requirements.txt
 
 ```bash
 # Validate config and target connectivity first
-python cli.py validate
+python vajra.py validate
 
 # Run a scan (uses config.yaml defaults: Ollama, jailbreak + injection + exfiltration)
-python cli.py scan
+python vajra.py scan
 
 # Run specific suites only
-python cli.py scan --suite jailbreak --suite injection
+python vajra.py scan --suite jailbreak --suite injection
 
 # Run with overrides (target, model, scoring, output)
-python cli.py scan --target ollama --model gpt-4o-mini --scoring llm_judge --output json
+python vajra.py scan --target ollama --model gpt-4o-mini --scoring llm_judge --output json
 
 # Dry-run: list payloads without sending any requests
-python cli.py scan --dry-run
+python vajra.py scan --dry-run
 ```
 
 The HTML report opens automatically in your browser after the scan.
@@ -77,7 +77,7 @@ Enhance your test suites by downloading massive, academic-grade adversarial data
 
 ```bash
 # Ingest 100 payloads from AllenAI's WildJailbreak dataset
-python cli.py ingest --dataset wildjailbreak --count 100
+python vajra.py ingest --dataset wildjailbreak --count 100
 
 # Add it to config.yaml 'suites:', then run scan
 ```
@@ -168,11 +168,11 @@ the judge is only called for `PARTIAL_LEAK` results, saving API costs.
 ## CLI Reference
 
 ```
-python cli.py scan          Run a scan (use --help to see all options like -t, -m, -o, -s)
-python cli.py validate      Check config, payloads, and target connectivity
-python cli.py list-runs     List all past scan runs
-python cli.py report <id>   Regenerate report for a past run
-python cli.py ingest        Ingest Hugging Face datasets into VAJRA format
+python vajra.py scan          Run a scan (use --help to see all options like -t, -m, -o, -s)
+python vajra.py validate      Check config, payloads, and target connectivity
+python vajra.py list-runs     List all past scan runs
+python vajra.py report <id>   Regenerate report for a past run
+python vajra.py ingest        Ingest Hugging Face datasets into VAJRA format
 ```
 
 ---

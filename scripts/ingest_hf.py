@@ -248,7 +248,7 @@ def main():
 
     print(f"\n[OK] {len(payloads)} payloads written to: {out_path}")
     print(f"\nNext step: add '- {args.dataset}' to suites in config.yaml, then run:")
-    print(f"  python cli.py scan")
+    print(f"  python vajra.py scan")
 
 
 if __name__ == "__main__":

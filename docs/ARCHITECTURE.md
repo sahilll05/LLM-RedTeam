@@ -7,8 +7,8 @@ Every component has a single responsibility and can be swapped or extended indep
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     CLI  (cli.py / typer)                        │
-│   python cli.py scan --config config.yaml --suite jailbreak      │
+│                     CLI  (vajra.py / typer)                      │
+│   python vajra.py scan --config config.yaml --suite jailbreak    │
 └───────────────────────────────┬─────────────────────────────────┘
                                 │
                 ┌───────────────▼───────────────┐
@@ -55,7 +55,7 @@ Every component has a single responsibility and can be swapped or extended indep
 
 ```text
 llm-redteam/
-├── cli.py                 # Typer-based command line interface
+├── vajra.py               # Typer-based command line interface
 ├── config.yaml            # Main configuration (targets, suites, scoring)
 ├── engine/
 │   ├── core.py            # Orchestrator: runs the scan loop
@@ -81,7 +81,7 @@ llm-redteam/
 
 ## Component Descriptions
 
-### CLI (`cli.py`)
+### CLI (`vajra.py`)
 Entry point using **Typer**. Exposes four commands:
 - `scan` — run a full red-team scan
 - `list-runs` — list past runs from SQLite

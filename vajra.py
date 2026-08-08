@@ -3,14 +3,14 @@ VAJRA CLI — Entry point.
 Vulnerability Analysis for Jailbreak & RAG Attacks
 
 Usage:
-    python cli.py scan
-    python cli.py scan -s jailbreak -s injection --scoring llm_judge
-    python cli.py scan --target ollama --model hermes
-    python cli.py scan --output json
-    python cli.py list-runs
-    python cli.py report <run-id>
-    python cli.py validate
-    python cli.py ingest --count 200
+    python vajra.py scan
+    python vajra.py scan -s jailbreak -s injection --scoring llm_judge
+    python vajra.py scan --target ollama --model hermes
+    python vajra.py scan --output json
+    python vajra.py list-runs
+    python vajra.py report <run-id>
+    python vajra.py validate
+    python vajra.py ingest --count 200
 """
 import sys
 import webbrowser
@@ -149,11 +149,11 @@ def scan(
 
     \b
     Examples:
-      python cli.py scan
-      python cli.py scan -s jailbreak -s injection
-      python cli.py scan --target ollama --model hermes --scoring llm_judge
-      python cli.py scan --suite wildjailbreak --dry-run
-      python cli.py scan --output json --no-open
+      python vajra.py scan
+      python vajra.py scan -s jailbreak -s injection
+      python vajra.py scan --target ollama --model hermes --scoring llm_judge
+      python vajra.py scan --suite wildjailbreak --dry-run
+      python vajra.py scan --output json --no-open
     """
     from engine.core import load_config, run_scan
     from engine.report import print_cli_report, generate_html_report
@@ -217,7 +217,7 @@ def list_runs():
     runs = store.list_runs()
 
     if not runs:
-        console.print("[yellow]No runs found. Run a scan first with:[/] python cli.py scan")
+        console.print("[yellow]No runs found. Run a scan first with:[/] python vajra.py scan")
         return
 
     table = Table(
@@ -360,9 +360,9 @@ def ingest(
 
     \b
     Examples:
-      python cli.py ingest
-      python cli.py ingest --dataset wildjailbreak --count 200
-      python cli.py ingest --force
+      python vajra.py ingest
+      python vajra.py ingest --dataset wildjailbreak --count 200
+      python vajra.py ingest --force
     """
     import subprocess
     cmd = [sys.executable, "scripts/ingest_hf.py",
