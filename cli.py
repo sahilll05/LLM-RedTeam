@@ -29,9 +29,9 @@ BANNER_UNICODE = r"""
 [bold cyan]██╗   ██╗ █████╗      ██╗██████╗  █████╗ [/]
 [bold cyan]██║   ██║██╔══██╗     ██║██╔══██╗██╔══██╗[/]
 [bold cyan]██║   ██║███████║     ██║██████╔╝███████║[/]
-[bold cyan]╚██╗ ██╔╝██╔══██║██   ██║██╔══██╗██╔══██║[/]
-[bold cyan] ╚████╔╝ ██║  ██║╚█████╔╝██████╔╝██║  ██║[/]
-[bold cyan]  ╚═══╝  ╚═╝  ╚═╝ ╚════╝ ╚═════╝ ╚═╝  ╚═╝[/]
+[bold cyan]╚██╗ ██╔╝██╔══██║██   ██║██║     ██╔══██║[/]
+[bold cyan] ╚████╔╝ ██║  ██║╚█████╔╝██║  ██╗██║  ██║[/]
+[bold cyan]  ╚═══╝  ╚═╝  ╚═╝ ╚════╝ ╚═╝  ╚═╝╚═╝  ╚═╝[/]
 [dim]  Vulnerability Analysis for Jailbreak & RAG Attacks[/]
   [dim]https://github.com/sahilll05/LLM-RedTeam[/]
 """
