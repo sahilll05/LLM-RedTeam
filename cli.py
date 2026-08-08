@@ -23,14 +23,7 @@ from rich.table import Table
 from rich import box
 from rich.text import Text
 
-app = typer.Typer(
-    name="vajra",
-    help="[bold cyan]VAJRA[/] -- Vulnerability Analysis for Jailbreak & RAG Attacks.",
-    add_completion=False,
-    rich_markup_mode="rich",
-    invoke_without_command=True,
-)
-console = Console()
+VERSION = "1.0.0"
 
 BANNER_UNICODE = r"""
 [bold cyan]██╗   ██╗ █████╗      ██╗██████╗  █████╗ [/]
@@ -52,9 +45,6 @@ BANNER_ASCII = """
 +-----------------------------------------------+
 """
 
-VERSION = "1.0.0"
-
-
 def _can_encode(s: str) -> bool:
     enc = getattr(sys.stdout, "encoding", "utf-8") or "utf-8"
     try:
@@ -62,6 +52,17 @@ def _can_encode(s: str) -> bool:
         return True
     except (UnicodeEncodeError, LookupError):
         return False
+
+app = typer.Typer(
+    name="vajra",
+    help="[bold cyan]VAJRA[/] -- Vulnerability Analysis for Jailbreak & RAG Attacks.",
+    add_completion=False,
+    rich_markup_mode="rich",
+    invoke_without_command=True,
+)
+console = Console()
+
+
 
 
 def print_banner():
@@ -80,13 +81,7 @@ def main(
     if version:
         console.print(f"[bold cyan]VAJRA[/] v{VERSION}")
         raise typer.Exit()
-    # Show banner if no subcommand given, or for all commands
-    if ctx.invoked_subcommand is None:
-        print_banner()
-        console.print(ctx.get_help())
-    else:
-        print_banner()
-
+    # Banner is printed unconditionally at startup below.
 
 @app.command()
 def scan(
@@ -374,4 +369,7 @@ def ingest(
 
 
 if __name__ == "__main__":
+    # Ensure the banner prints first, regardless of what command or help flag is passed
+    if "--version" not in sys.argv and "-v" not in sys.argv:
+        print_banner()
     app()
