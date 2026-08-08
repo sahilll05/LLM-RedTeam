@@ -62,6 +62,9 @@ python cli.py scan
 # Run specific suites only
 python cli.py scan --suite jailbreak --suite injection
 
+# Run with overrides (target, model, scoring, output)
+python cli.py scan --target ollama --model gpt-4o-mini --scoring llm_judge --output json
+
 # Dry-run: list payloads without sending any requests
 python cli.py scan --dry-run
 ```
@@ -74,7 +77,7 @@ Enhance your test suites by downloading massive, academic-grade adversarial data
 
 ```bash
 # Ingest 100 payloads from AllenAI's WildJailbreak dataset
-python scripts/ingest_hf.py --dataset wildjailbreak --count 100
+python cli.py ingest --dataset wildjailbreak --count 100
 
 # Add it to config.yaml 'suites:', then run scan
 ```
@@ -165,10 +168,11 @@ the judge is only called for `PARTIAL_LEAK` results, saving API costs.
 ## CLI Reference
 
 ```
-python cli.py scan          Run a scan (use --config, --suite, --scoring to override)
+python cli.py scan          Run a scan (use --help to see all options like -t, -m, -o, -s)
 python cli.py validate      Check config, payloads, and target connectivity
 python cli.py list-runs     List all past scan runs
 python cli.py report <id>   Regenerate report for a past run
+python cli.py ingest        Ingest Hugging Face datasets into VAJRA format
 ```
 
 ---
