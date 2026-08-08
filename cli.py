@@ -26,23 +26,16 @@ from rich.text import Text
 VERSION = "1.0.0"
 
 BANNER_UNICODE = r"""
-[bold cyan]██╗   ██╗ █████╗      ██╗██████╗  █████╗ [/]
-[bold cyan]██║   ██║██╔══██╗     ██║██╔══██╗██╔══██╗[/]
-[bold cyan]██║   ██║███████║     ██║██████╔╝███████║[/]
-[bold cyan]╚██╗ ██╔╝██╔══██║██   ██║██║     ██╔══██║[/]
-[bold cyan] ╚████╔╝ ██║  ██║╚█████╔╝██║  ██╗██║  ██║[/]
-[bold cyan]  ╚═══╝  ╚═╝  ╚═╝ ╚════╝ ╚═╝  ╚═╝╚═╝  ╚═╝[/]
+[bold cyan] █████   █████   █████████         █████ ███████████     █████████  [/]
+[bold cyan]░░███   ░░███   ███░░░░░███       ░░███ ░░███░░░░░███   ███░░░░░███ [/]
+[bold cyan] ░███    ░███  ░███    ░███        ░███  ░███    ░███  ░███    ░███ [/]
+[bold cyan] ░███    ░███  ░███████████        ░███  ░██████████   ░███████████ [/]
+[bold cyan] ░░███   ███   ░███░░░░░███        ░███  ░███░░░░░███  ░███░░░░░███ [/]
+[bold cyan]  ░░░█████░    ░███    ░███  ███   ░███  ░███    ░███  ░███    ░███ [/]
+[bold cyan]    ░░███      █████   █████░░████████   █████   █████ █████   █████[/]
+[bold cyan]     ░░░      ░░░░░   ░░░░░  ░░░░░░░░   ░░░░░   ░░░░░ ░░░░░   ░░░░░[/]
 [dim]  Vulnerability Analysis for Jailbreak & RAG Attacks[/]
   [dim]https://github.com/sahilll05/LLM-RedTeam[/]
-"""
-
-BANNER_ASCII = """
-+-----------------------------------------------+
-|  VAJRA  v{version:<5}                             |
-|  Vulnerability Analysis for Jailbreak & RAG   |
-|  Attacks                                      |
-|  https://github.com/sahilll05/LLM-RedTeam     |
-+-----------------------------------------------+
 """
 
 def _can_encode(s: str) -> bool:
@@ -52,6 +45,17 @@ def _can_encode(s: str) -> bool:
         return True
     except (UnicodeEncodeError, LookupError):
         return False
+
+BANNER_ASCII = r"""
+ ____   ____    _       _  ____     _    
+|_  _| |_  _|  / \    / \|_  _|  /_\   
+  \ \   / /   / _ \  / _ \ \ \   //_\\  
+   \ \ / /   / ___ \/ ___ \ \ \ //   \\ 
+    \ ' /   /_/   \_\_/ \_/\_'_\/       \
+     \_/                                 
+  Vulnerability Analysis for Jailbreak & RAG Attacks
+  v{version} -- https://github.com/sahilll05/LLM-RedTeam
+"""
 
 app = typer.Typer(
     name="vajra",
@@ -66,7 +70,8 @@ console = Console()
 
 
 def print_banner():
-    if _can_encode("\u2588"):
+    # Check if the terminal can render shade block characters used in the banner
+    if _can_encode("\u2591"):
         console.print(BANNER_UNICODE)
     else:
         console.print(BANNER_ASCII.format(version=VERSION))
