@@ -1,8 +1,8 @@
-# Architecture — LLM-RedTeam
+# Architecture — VAJRA
 
 ## System Overview
 
-LLM-RedTeam is a modular, plugin-based security testing framework for LLM applications.
+VAJRA is a modular, plugin-based security testing framework for LLM applications.
 Every component has a single responsibility and can be swapped or extended independently.
 
 ```

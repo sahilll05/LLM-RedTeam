@@ -1,19 +1,20 @@
-# LLM-RedTeam
+# VAJRA — Vulnerability Analysis for Jailbreak & RAG Attacks
 
-> **Automated security testing framework for LLM-powered applications.**
-> Think of it as Burp Suite, but for AI apps.
+> **VAJRA** — *Vulnerability Analysis for Jailbreak & RAG Attacks*
+>
+> Inspired by the **Vajra (वज्र)**, the divine thunderbolt weapon of Indra in Hindu mythology —
+> symbolizing strength and the power to overcome formidable forces.
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![OWASP LLM Top 10](https://img.shields.io/badge/taxonomy-OWASP%20LLM%20Top%2010-red.svg)](https://owasp.org/www-project-top-10-for-large-language-model-applications/)
 
-LLM-RedTeam automatically probes any LLM-powered application — a chatbot, RAG pipeline,
-or AI agent — for security weaknesses: jailbreaks, prompt injection, system-prompt leakage,
-and indirect injection via poisoned RAG content.
+VAJRA is an open-source LLM red-teaming framework designed to probe AI applications for jailbreaks,
+prompt injection, RAG-based indirect attacks, and other security vulnerabilities. It runs the target
+through a structured battery of attacks, scores each response using a two-tier engine
+(heuristic + LLM-as-judge), and produces a risk report with concrete mitigation recommendations.
 
-It runs the target through a structured battery of attacks, scores each response using a
-two-tier engine (heuristic + LLM-as-judge), and produces a risk report with concrete
-mitigation recommendations.
+Think of it as **Burp Suite, but for AI apps.**
 
 ---
 
@@ -39,13 +40,13 @@ mitigation recommendations.
 1. **Python 3.11+** and **Git**
 2. **Ollama** (for zero-cost local testing):
    - Download: https://ollama.com/download
-   - Pull a model: `ollama pull llama3`
+   - Pull a model: `ollama pull hermes` or `ollama pull llama3`
 
 ### Install
 
 ```bash
 git clone https://github.com/sahilll05/LLM-RedTeam.git
-cd llm-redteam
+cd LLM-RedTeam
 pip install -r requirements.txt
 ```
 
@@ -55,7 +56,7 @@ pip install -r requirements.txt
 # Validate config and target connectivity first
 python cli.py validate
 
-# Run a scan (uses config.yaml defaults: Ollama/llama3, jailbreak + injection + exfiltration)
+# Run a scan (uses config.yaml defaults: Ollama, jailbreak + injection + exfiltration)
 python cli.py scan
 
 # Run specific suites only
@@ -87,7 +88,7 @@ Edit `config.yaml` to point at your target:
 ```yaml
 target:
   type: ollama      # ollama | openai | anthropic | http | rag
-  model: llama3
+  model: hermes
   base_url: http://localhost:11434
   system_prompt: "You are a helpful customer support assistant."
 
@@ -193,18 +194,18 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for full details.
 
 - Only test systems you **own** or have **explicit written permission** to test
 - This payload library is a **security research and defensive testing tool**, not an exploit kit
-- Payload techniques are illustrative and categorised by OWASP LLM Top 10 taxonomy
+- Payload techniques are categorised by OWASP LLM Top 10 taxonomy
 - Do not use against production systems without a signed security testing agreement
 
 ---
 
 ## Comparison to Existing Tools
 
-| | LLM-RedTeam | NVIDIA garak | Microsoft PyRIT |
+| | VAJRA | NVIDIA garak | Microsoft PyRIT |
 |---|---|---|---|
 | Setup complexity | Low | Medium | High |
 | Cost to run | $0 (Ollama) | $0 | Varies |
-| Indirect injection focus | ✅ Core feature | Partial | Partial |
+| RAG/Indirect injection focus | ✅ Core feature | Partial | Partial |
 | HTML report | ✅ | ❌ | Partial |
 | Target: any HTTP endpoint | ✅ | ❌ | ❌ |
 | Positioning | Lightweight, team-sized | Research | Enterprise |
@@ -216,6 +217,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for full details.
 - [OWASP Top 10 for LLM Applications](https://owasp.org/www-project-top-10-for-large-language-model-applications/)
 - [Greshake et al. (2023) — Indirect Prompt Injection](https://arxiv.org/abs/2302.12173)
 - [Perez & Ribeiro (2022) — Ignore Previous Prompt](https://arxiv.org/abs/2211.09527)
+- [AllenAI WildJailbreak Dataset](https://huggingface.co/datasets/allenai/wildjailbreak)
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md)
 

@@ -1,5 +1,5 @@
 """
-LLM-RedTeam CLI — Entry point.
+VAJRA CLI — Entry point.
 
 Usage:
     python cli.py scan
@@ -20,7 +20,7 @@ from rich import box
 
 app = typer.Typer(
     name="llm-redteam",
-    help="[bold cyan]LLM-RedTeam[/] — Automated security testing framework for LLM applications.",
+    help="[bold cyan]VAJRA[/] — Vulnerability Analysis for Jailbreak & RAG Attacks.",
     add_completion=False,
     rich_markup_mode="rich",
 )
@@ -192,7 +192,7 @@ def validate(
     """Validate config.yaml and payload files, and check target connectivity."""
     from engine.core import load_config, load_payloads, load_target
 
-    console.print("\n[bold]Validating LLM-RedTeam configuration...[/]\n")
+    console.print("\n[bold]Validating VAJRA configuration...[/]\n")
     errors = []
 
     # 1. Load config

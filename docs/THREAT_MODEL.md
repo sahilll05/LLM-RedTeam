@@ -1,8 +1,8 @@
-# Threat Model — LLM-RedTeam
+# Threat Model — VAJRA
 
 ## Overview
 
-This document maps the attack categories covered by LLM-RedTeam to the
+This document maps the attack categories covered by VAJRA to the
 [OWASP Top 10 for LLM Applications (2025)](https://owasp.org/www-project-top-10-for-large-language-model-applications/)
 and describes what each test validates, what a positive finding means, and
 what mitigations apply.
@@ -113,7 +113,7 @@ with the attacker before making restricted requests.
 
 ## Threat Verification (Scoring)
 
-Evaluating whether an attack actually succeeded is inherently complex for LLMs. LLM-RedTeam
+Evaluating whether an attack actually succeeded is inherently complex for LLMs. VAJRA
 employs two tiers to verify if a threat was realized:
 
 1. **Heuristic Keyword Matching**: Extremely fast checks against known success/refusal tokens.
@@ -125,7 +125,7 @@ employs two tiers to verify if a threat was realized:
 
 ## Out of Scope
 
-LLM-RedTeam focuses on **prompt-level** and **input/output** security.
+VAJRA focuses on **prompt-level** and **input/output** security.
 The following are out of scope for this tool:
 
 - Infrastructure security (API keys in environment, network exposure)

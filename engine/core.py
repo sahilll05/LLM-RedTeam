@@ -178,7 +178,7 @@ def run_scan(
     delay   = float(config.get("rate_limit", {}).get("delay_seconds", 1.0))
     sys_prompt = config.get("target", {}).get("system_prompt")
 
-    console.print(f"\n[bold cyan]LLM-RedTeam[/] — Starting scan [dim]{run_id}[/]")
+    console.print(f"\n[bold cyan]VAJRA[/] — Starting scan [dim]{run_id}[/]")
     console.print(
         f"  Target  : [bold]{config['target']['type']} / "
         f"{config['target'].get('model', 'n/a')}[/]"

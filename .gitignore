@@ -60,7 +60,7 @@ logs/
 ehthumbs.db
 
 # ─── Project Documentation ────────────────────────────────
-LLM-RedTeam-Project-Blueprint.md
+quick/
 
 # ─── Cached Datasets ──────────────────────────────────────
 data/

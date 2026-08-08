@@ -67,7 +67,7 @@ def print_cli_report(
     console.print()
     console.print(
         Panel(
-            f"[bold cyan]LLM-RedTeam Scan Report[/]\n"
+            f"[bold cyan]VAJRA Scan Report[/]\n"
             f"Run ID : [dim]{run_id}[/]\n"
             f"Target : [bold]{config.get('target', {}).get('type', '?')} / "
             f"{config.get('target', {}).get('model', '?')}[/]",

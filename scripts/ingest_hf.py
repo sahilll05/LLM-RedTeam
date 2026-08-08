@@ -1,6 +1,6 @@
 """
 ingest_hf.py — Download research datasets from Hugging Face and convert them
-into the LLM-RedTeam YAML payload format for offline use.
+into the VAJRA YAML payload format for offline use.
 
 Usage:
     python scripts/ingest_hf.py                     # 100 wildjailbreak payloads
@@ -187,7 +187,7 @@ def ingest_jbb(csv_path: Path, count: int, delimiter: str) -> list[dict]:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Ingest HuggingFace security datasets into LLM-RedTeam YAML format."
+        description="Ingest HuggingFace security datasets into VAJRA YAML format."
     )
     parser.add_argument("--count",   type=int, default=100,
                         help="Number of payloads to generate (default: 100)")
