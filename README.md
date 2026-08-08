@@ -23,7 +23,8 @@ mitigation recommendations.
 |---|---|
 | **5 attack suites** | Jailbreak, Direct Injection, Exfiltration, Indirect Injection (RAG), Multi-Turn Escalation |
 | **5 target adapters** | Ollama (local/free), OpenAI, Anthropic, generic HTTP endpoint, RAG pipeline simulation |
-| **Two-tier scoring** | Heuristic (fast, free) + LLM-as-judge (accurate) |
+| **Two-tier scoring** | Heuristic (fast, free) + LLM-as-judge (accurate, hermes/llama3) |
+| **Hugging Face integration** | Ingest massive research datasets (e.g., WildJailbreak) for offline use |
 | **Zero API cost** | Full demo loop runs locally via Ollama — no tokens spent |
 | **HTML + CLI reports** | Risk score, category breakdown, response snippets, OWASP mitigations |
 | **SQLite persistence** | Every run stored — compare scores across system prompt versions |
@@ -66,6 +67,17 @@ python cli.py scan --dry-run
 
 The HTML report opens automatically in your browser after the scan.
 
+### Ingest Research Datasets (Optional)
+
+Enhance your test suites by downloading massive, academic-grade adversarial datasets. They are cached locally so all future runs are 100% offline.
+
+```bash
+# Ingest 100 payloads from AllenAI's WildJailbreak dataset
+python scripts/ingest_hf.py --dataset wildjailbreak --count 100
+
+# Add it to config.yaml 'suites:', then run scan
+```
+
 ---
 
 ## Configuration
@@ -104,12 +116,9 @@ target:
 target:
   type: rag
   inner_target_type: ollama
-  model: llama3
+  model: hermes
   base_url: http://localhost:11434
-  knowledge_base_dir: ./fixtures/fake_knowledge_base
-
-suites:
-  - indirect_injection
+  knowledge_base_dir: ./data/docs
 ```
 
 ### Using OpenAI or Anthropic
@@ -132,6 +141,7 @@ target:
 | `exfiltration` | 7 | System prompt leakage, config disclosure | LLM06 |
 | `indirect_injection` | 6 | RAG/document poisoning, hidden instructions | LLM01 (Indirect) |
 | `multi_turn` | 5 | Gradual escalation over conversation sequences | LLM01 |
+| `wildjailbreak` | 100+ | Auto-ingested from Hugging Face research | LLM01 |
 
 ---
 

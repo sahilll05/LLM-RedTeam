@@ -24,6 +24,10 @@ Every component has a single responsibility and can be swapped or extended indep
            │   payloads/*.yaml │  │   targets/*.py          │
            └────────────┬──────┘  └─────┬──────────────────┘
                         │               │
+            ┌───────────▼───────────┐   │
+            │  Script: ingest_hf.py │   │
+            │  (HF to YAML sync)    │   │
+            └───────────┬───────────┘   │
                         └───────┬───────┘
                                 │
                    ┌────────────▼───────────┐
@@ -45,6 +49,32 @@ Every component has a single responsibility and can be swapped or extended indep
                    │  · CLI (rich table)    │
                    │  · HTML (Jinja2)       │
                    └────────────────────────┘
+```
+
+### Folder Structure
+
+```text
+llm-redteam/
+├── cli.py                 # Typer-based command line interface
+├── config.yaml            # Main configuration (targets, suites, scoring)
+├── engine/
+│   ├── core.py            # Orchestrator: runs the scan loop
+│   ├── scorer.py          # Two-tier scoring engine (heuristic + llm_judge)
+│   └── database.py        # SQLite persistence layer
+├── targets/
+│   ├── base.py            # BaseTarget interface
+│   ├── ollama_target.py   # Local Ollama integration
+│   ├── openai_target.py   # OpenAI / Anthropic integration
+│   ├── http_target.py     # Generic HTTP REST endpoint integration
+│   └── rag_target.py      # Simulated RAG pipeline
+├── payloads/              # YAML attack definitions
+│   ├── jailbreak.yaml
+│   ├── injection.yaml
+│   └── wildjailbreak.yaml # Auto-generated from Hugging Face
+├── scripts/
+│   └── ingest_hf.py       # Downloads research datasets offline
+├── reports/               # HTML/JSON outputs
+└── data/                  # Cached offline TSV datasets
 ```
 
 ---

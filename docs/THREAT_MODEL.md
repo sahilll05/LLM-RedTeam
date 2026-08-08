@@ -12,12 +12,14 @@ what mitigations apply.
 ## Threat Categories
 
 ### LLM01 — Prompt Injection (Direct)
-**Suites:** `jailbreak`, `injection`
+**Suites:** `jailbreak`, `injection`, `wildjailbreak`
 
 **What it tests:**
 User-supplied input that attempts to override or supersede the application's
 system prompt. Includes role-play personas (DAN), instruction override commands
-("ignore all previous instructions"), and authority impersonation.
+("ignore all previous instructions"), authority impersonation, and massive,
+community-sourced academic datasets (e.g., WildJailbreak from Hugging Face) that
+test hundreds of known adversarial prompts.
 
 **What a COMPLIED finding means:**
 The model's runtime instructions can be overridden by end-user messages.
@@ -106,6 +108,18 @@ with the attacker before making restricted requests.
 | **high** | Significant bypass of intended safety boundaries (e.g., jailbreak succeeded, direct injection worked) |
 | **medium** | Partial bypass or information disclosure; attacker gains some advantage |
 | **low** | Minor deviation from expected behavior; low practical exploitability |
+
+---
+
+## Threat Verification (Scoring)
+
+Evaluating whether an attack actually succeeded is inherently complex for LLMs. LLM-RedTeam
+employs two tiers to verify if a threat was realized:
+
+1. **Heuristic Keyword Matching**: Extremely fast checks against known success/refusal tokens.
+2. **LLM-as-Judge Semantic Reasoning**: An independent evaluator LLM (e.g., Hermes or Llama 3)
+   semantically analyzes the target's response to definitively prove if the guardrail was bypassed.
+   This drastically reduces "fluff" and false positives compared to simple heuristic checks.
 
 ---
 

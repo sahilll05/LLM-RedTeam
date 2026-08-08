@@ -104,6 +104,7 @@ Categories you'll build out:
 - **`exfiltration.yaml`** — attempts to get the model to reveal its system prompt, internal instructions, or config
 - **`indirect_injection.yaml`** — payloads designed to be embedded inside a "document" or "search result" rather than sent directly by the user — this is the differentiator
 - **`multi_turn.yaml`** — sequences of 3-6 messages that escalate gradually rather than attacking in one shot
+- **`wildjailbreak.yaml`** — auto-generated from massive Hugging Face academic datasets (like AllenAI's WildJailbreak) via the ingestion script
 
 ### 4.4 Scoring Engine (`scorer.py`)
 Two layers, and this is where you can show real depth:
@@ -174,7 +175,8 @@ llm-redteam/
 │   ├── injection.yaml
 │   ├── exfiltration.yaml
 │   ├── indirect_injection.yaml
-│   └── multi_turn.yaml
+│   ├── multi_turn.yaml
+│   └── wildjailbreak.yaml       # Ingested Hugging Face dataset
 ├── engine/
 │   ├── core.py
 │   ├── scorer.py
@@ -186,8 +188,9 @@ llm-redteam/
 │   ├── ollama_target.py
 │   ├── http_target.py
 │   └── rag_target.py
-├── fixtures/
-│   └── fake_knowledge_base/     # sample docs for indirect injection demo
+├── scripts/
+│   └── ingest_hf.py             # Downloads research datasets offline
+├── data/                        # Cached TSV datasets
 ├── reports/                     # generated output lands here
 ├── tests/
 │   └── test_scorer.py
@@ -262,4 +265,5 @@ A student project that just runs and prints "looks good" isn't convincing. Add a
 
 ## Next Step
 
-I'll scaffold the actual starter code next: `core.py`, `base_target.py`, `ollama_target.py`, one full payload YAML file, and the keyword scorer — a working v0 you can run today. Say the word and I'll write it out.
+The framework is now fully built and implemented! 
+The repository contains the working execution engine, HTML reporting, multi-suite payloads, Hugging Face dataset ingestion, and a dual-tier semantic LLM scoring mechanism.

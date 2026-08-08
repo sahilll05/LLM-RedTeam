@@ -8,7 +8,7 @@ target:
   type: ollama              # ollama | openai | anthropic | http | rag
 
   # Ollama (local, free, no API key)
-  model: llama3
+  model: hermes
   base_url: http://localhost:11434
 
   # OpenAI / Anthropic (set api_key here or via env var)
@@ -33,6 +33,7 @@ suites:
   - jailbreak
   - injection
   - exfiltration
+  - wildjailbreak
   # - indirect_injection    # requires rag target or rag_target.py wrapping
   # - multi_turn
 
@@ -45,7 +46,7 @@ scoring:
   # heuristic: keyword matching only (fast, free, no extra API calls)
   # llm_judge: use a judge LLM to evaluate every response (accurate, costs tokens)
   # both:      heuristic first; call judge only for ambiguous PARTIAL_LEAK verdicts
-  mode: heuristic
+  mode: llm_judge
 
   judge:
     type: ollama             # ollama | openai

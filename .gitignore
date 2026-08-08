@@ -58,3 +58,9 @@ logs/
 .AppleDouble
 .LSOverride
 ehthumbs.db
+
+# ─── Project Documentation ────────────────────────────────
+LLM-RedTeam-Project-Blueprint.md
+
+# ─── Cached Datasets ──────────────────────────────────────
+data/

@@ -96,13 +96,13 @@ def scan(
             json.dumps([vars(r) for r in results], indent=2),
             encoding="utf-8",
         )
-        console.print(f"[dim]JSON saved → {json_path}[/]")
+        console.print(f"[dim]JSON saved -> {json_path}[/]")
 
     # HTML report
     if not no_html and output_cfg.get("format") in ("html", "both"):
         html_path = reports_dir / f"{run_id}.html"
         generate_html_report(results, run_id, config, html_path)
-        console.print(f"[dim]HTML report → [link={html_path.resolve().as_uri()}]{html_path}[/link][/]")
+        console.print(f"[dim]HTML report -> [link={html_path.resolve().as_uri()}]{html_path}[/link][/]")
 
         should_open = (not no_open) and output_cfg.get("open_html", True)
         if should_open:
@@ -175,7 +175,7 @@ def report(
     reports_dir = Path(config.get("output", {}).get("reports_dir", "./reports"))
     html_path = reports_dir / f"{run_id}.html"
     generate_html_report(results, run_id, config, html_path)
-    console.print(f"[dim]HTML report → {html_path}[/]")
+    console.print(f"[dim]HTML report -> {html_path}[/]")
 
     if not no_open:
         webbrowser.open(html_path.resolve().as_uri())
