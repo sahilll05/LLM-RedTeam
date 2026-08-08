@@ -1,12 +1,16 @@
 """
 VAJRA CLI — Entry point.
+Vulnerability Analysis for Jailbreak & RAG Attacks
 
 Usage:
     python cli.py scan
-    python cli.py scan --config ./config.yaml --suite jailbreak --suite injection
+    python cli.py scan -s jailbreak -s injection --scoring llm_judge
+    python cli.py scan --target ollama --model hermes
+    python cli.py scan --output json
     python cli.py list-runs
     python cli.py report <run-id>
     python cli.py validate
+    python cli.py ingest --count 200
 """
 import sys
 import webbrowser
@@ -17,14 +21,71 @@ import typer
 from rich.console import Console
 from rich.table import Table
 from rich import box
+from rich.text import Text
 
 app = typer.Typer(
-    name="llm-redteam",
-    help="[bold cyan]VAJRA[/] — Vulnerability Analysis for Jailbreak & RAG Attacks.",
+    name="vajra",
+    help="[bold cyan]VAJRA[/] -- Vulnerability Analysis for Jailbreak & RAG Attacks.",
     add_completion=False,
     rich_markup_mode="rich",
+    invoke_without_command=True,
 )
 console = Console()
+
+BANNER_UNICODE = r"""
+[bold cyan]██╗   ██╗ █████╗      ██╗██████╗  █████╗ [/]
+[bold cyan]██║   ██║██╔══██╗     ██║██╔══██╗██╔══██╗[/]
+[bold cyan]██║   ██║███████║     ██║██████╔╝███████║[/]
+[bold cyan]╚██╗ ██╔╝██╔══██║██   ██║██╔══██╗██╔══██║[/]
+[bold cyan] ╚████╔╝ ██║  ██║╚█████╔╝██████╔╝██║  ██║[/]
+[bold cyan]  ╚═══╝  ╚═╝  ╚═╝ ╚════╝ ╚═════╝ ╚═╝  ╚═╝[/]
+[dim]  Vulnerability Analysis for Jailbreak & RAG Attacks[/]
+  [dim]https://github.com/sahilll05/LLM-RedTeam[/]
+"""
+
+BANNER_ASCII = """
++-----------------------------------------------+
+|  VAJRA  v{version:<5}                             |
+|  Vulnerability Analysis for Jailbreak & RAG   |
+|  Attacks                                      |
+|  https://github.com/sahilll05/LLM-RedTeam     |
++-----------------------------------------------+
+"""
+
+VERSION = "1.0.0"
+
+
+def _can_encode(s: str) -> bool:
+    enc = getattr(sys.stdout, "encoding", "utf-8") or "utf-8"
+    try:
+        s.encode(enc)
+        return True
+    except (UnicodeEncodeError, LookupError):
+        return False
+
+
+def print_banner():
+    if _can_encode("\u2588"):
+        console.print(BANNER_UNICODE)
+    else:
+        console.print(BANNER_ASCII.format(version=VERSION))
+
+
+@app.callback()
+def main(
+    ctx: typer.Context,
+    version: bool = typer.Option(False, "--version", "-v", help="Show VAJRA version and exit.", is_eager=True),
+):
+    """VAJRA — Automated LLM red-teaming framework."""
+    if version:
+        console.print(f"[bold cyan]VAJRA[/] v{VERSION}")
+        raise typer.Exit()
+    # Show banner if no subcommand given, or for all commands
+    if ctx.invoked_subcommand is None:
+        print_banner()
+        console.print(ctx.get_help())
+    else:
+        print_banner()
 
 
 @app.command()
@@ -39,13 +100,33 @@ def scan(
     suite: Optional[list[str]] = typer.Option(
         None,
         "--suite", "-s",
-        help="Override suites from config (can be repeated). "
-             "Options: jailbreak, injection, exfiltration, indirect_injection, multi_turn",
+        help="Attack suite(s) to run. Repeatable. "
+             "Choices: jailbreak | injection | exfiltration | indirect_injection | multi_turn | wildjailbreak",
+    ),
+    target_type: Optional[str] = typer.Option(
+        None,
+        "--target", "-t",
+        help="Override target type from config. Choices: ollama | openai | anthropic | http | rag",
+    ),
+    model: Optional[str] = typer.Option(
+        None,
+        "--model", "-m",
+        help="Override model name (e.g. hermes, llama3, gpt-4o-mini).",
+    ),
+    scoring_mode: Optional[str] = typer.Option(
+        None,
+        "--scoring",
+        help="Scoring mode override: heuristic | llm_judge | both",
+    ),
+    output_fmt: Optional[str] = typer.Option(
+        None,
+        "--output", "-o",
+        help="Output format override: html | json | both",
     ),
     dry_run: bool = typer.Option(
         False,
         "--dry-run",
-        help="Load and list payloads without sending any requests.",
+        help="List all payloads that would be sent, without making any requests.",
     ),
     no_html: bool = typer.Option(
         False,
@@ -55,15 +136,25 @@ def scan(
     no_open: bool = typer.Option(
         False,
         "--no-open",
-        help="Don't auto-open the HTML report in browser.",
+        help="Don't auto-open the HTML report in browser after scan.",
     ),
-    scoring_mode: Optional[str] = typer.Option(
-        None,
-        "--scoring",
-        help="Override scoring mode: heuristic | llm_judge | both",
+    verbose: bool = typer.Option(
+        False,
+        "--verbose",
+        help="Show each request/response pair in real-time during scan.",
     ),
 ):
-    """Run a full red-team scan against the configured target."""
+    """
+    Run a full red-team scan against the configured target.
+
+    \b
+    Examples:
+      python cli.py scan
+      python cli.py scan -s jailbreak -s injection
+      python cli.py scan --target ollama --model hermes --scoring llm_judge
+      python cli.py scan --suite wildjailbreak --dry-run
+      python cli.py scan --output json --no-open
+    """
     from engine.core import load_config, run_scan
     from engine.report import print_cli_report, generate_html_report
     from engine.storage import ResultsStore
@@ -76,6 +167,14 @@ def scan(
         config["suites"] = list(suite)
     if scoring_mode:
         config.setdefault("scoring", {})["mode"] = scoring_mode
+    if target_type:
+        config.setdefault("target", {})["type"] = target_type
+    if model:
+        config.setdefault("target", {})["model"] = model
+    if output_fmt:
+        config.setdefault("output", {})["format"] = output_fmt
+    if verbose:
+        config["verbose"] = True
 
     run_id, results = run_scan(config, dry_run=dry_run)
 
@@ -153,7 +252,7 @@ def report(
         Path("./config.yaml"),
         "--config", "-c",
     ),
-    no_open: bool = typer.Option(False, "--no-open"),
+    no_open: bool = typer.Option(False, "--no-open", help="Don't open the report in browser."),
 ):
     """Regenerate the HTML report for a past run."""
     from engine.storage import ResultsStore
@@ -189,7 +288,7 @@ def validate(
         exists=True,
     ),
 ):
-    """Validate config.yaml and payload files, and check target connectivity."""
+    """Validate config.yaml, payload files, and check target connectivity."""
     from engine.core import load_config, load_payloads, load_target
 
     console.print("\n[bold]Validating VAJRA configuration...[/]\n")
@@ -198,9 +297,9 @@ def validate(
     # 1. Load config
     try:
         config = load_config(config_path)
-        console.print(f"[green]✓[/] Config loaded from [cyan]{config_path}[/]")
+        console.print(f"[green]OK[/] Config loaded from [cyan]{config_path}[/]")
     except Exception as e:
-        console.print(f"[red]✗ Config load failed:[/] {e}")
+        console.print(f"[red]FAIL Config load failed:[/] {e}")
         raise typer.Exit(1)
 
     # 2. Validate required keys
@@ -213,7 +312,7 @@ def validate(
     suites = config.get("suites", [])
     payloads = load_payloads(suites)
     if payloads:
-        console.print(f"[green]✓[/] {len(payloads)} payloads loaded across {len(suites)} suite(s)")
+        console.print(f"[green]OK[/] {len(payloads)} payloads loaded across {len(suites)} suite(s)")
     else:
         errors.append("No payloads loaded — check suite names and payload YAML files")
 
@@ -222,9 +321,9 @@ def validate(
         target = load_target(config)
         healthy = target.health_check()
         if healthy:
-            console.print(f"[green]✓[/] Target reachable: {config['target']['type']} / {config['target'].get('model', '')}")
+            console.print(f"[green]OK[/] Target reachable: {config['target']['type']} / {config['target'].get('model', '')}")
         else:
-            errors.append(f"Target health check failed — is the target running?")
+            errors.append("Target health check failed — is the target running?")
     except Exception as e:
         errors.append(f"Target init error: {e}")
 
@@ -232,10 +331,46 @@ def validate(
     if errors:
         console.print("\n[bold red]Validation failed:[/]")
         for err in errors:
-            console.print(f"  [red]✗[/] {err}")
+            console.print(f"  [red]FAIL[/] {err}")
         raise typer.Exit(1)
     else:
-        console.print("\n[bold green]✓ All checks passed. Ready to scan.[/]")
+        console.print("\n[bold green]All checks passed. Ready to scan.[/]")
+
+
+@app.command()
+def ingest(
+    dataset: str = typer.Option(
+        "wildjailbreak",
+        "--dataset", "-d",
+        help="Dataset to ingest: wildjailbreak | jbb",
+    ),
+    count: int = typer.Option(
+        100,
+        "--count", "-n",
+        help="Number of payloads to extract.",
+    ),
+    force: bool = typer.Option(
+        False,
+        "--force", "-f",
+        help="Re-download dataset even if cached locally.",
+    ),
+):
+    """
+    Download and ingest a Hugging Face research dataset into a VAJRA payload YAML.
+
+    \b
+    Examples:
+      python cli.py ingest
+      python cli.py ingest --dataset wildjailbreak --count 200
+      python cli.py ingest --force
+    """
+    import subprocess
+    cmd = [sys.executable, "scripts/ingest_hf.py",
+           "--dataset", dataset,
+           "--count", str(count)]
+    if force:
+        cmd.append("--force")
+    subprocess.run(cmd, check=True)
 
 
 if __name__ == "__main__":
