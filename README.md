@@ -1,5 +1,9 @@
 # VAJRA — Vulnerability Analysis for Jailbreak & RAG Attacks
 
+<p align="center">
+  <img src="logo.png" alt="VAJRA Logo" width="600">
+</p>
+
 > **VAJRA** — *Vulnerability Analysis for Jailbreak & RAG Attacks*
 >
 > Inspired by the **Vajra (वज्र)**, the divine thunderbolt weapon of Indra in Hindu mythology —
