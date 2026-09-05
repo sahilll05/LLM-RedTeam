@@ -1,0 +1,338 @@
+% ============================================================
+% VAJRA: A Ground-Truth Verified LLM Red-Teaming Framework
+% IEEEtran Conference Class — compile on Overleaf as-is
+% ============================================================
+\documentclass[conference]{IEEEtran}
+
+% ---------- Packages ----------
+\usepackage{cite}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{listings}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue,
+}
+
+% ---------- Title ----------
+\title{VAJRA: A Ground-Truth Verified Scoring Architecture\\for Automated LLM Red-Teaming}
+
+\author{
+  \IEEEauthorblockN{Sahil Powar}
+  \IEEEauthorblockA{%
+    \textit{Independent Security Research}\\
+    \href{https://github.com/sahilll05/LLM-RedTeam}{github.com/sahilll05/LLM-RedTeam}
+  }
+}
+
+\begin{document}
+\maketitle
+
+% ============================================================
+\begin{abstract}
+% GUIDANCE (delete before submission):
+%   One paragraph ~150 words. Structure:
+%     1. Problem: automated LLM red-teaming tools conflate
+%        topic-discussion with actual compromise.
+%     2. Consequence: measured false-positive rate on benign,
+%        superficially sensitive queries (cite WildJailbreak
+%        and JailbreakBench calibration splits).
+%     3. Contribution: canary-token exfiltration proofs,
+%        sandboxed exploit execution, decomposed rubric judge.
+%     4. Validation: against Young & Moody consensus-labeled
+%        ground truth and cross-model benchmark.
+%     5. Result: FPR reduction X%, detection rate preserved.
+Existing automated LLM red-teaming tools achieve detection
+precision through deterministic, ground-truthed checks for
+some categories (e.g., registry lookups, verbatim text
+matching) but rely on heuristic or single-pass LLM-judge
+scoring for others---particularly system-prompt exfiltration
+and actionable-exploit categories---where the boundary
+between benign topic discussion and actual compromise is not
+mechanically verified. We show that na\"ive keyword-based
+scoring produces a high false-positive rate on benign,
+superficially sensitive queries, measured against contrastive
+benign data from WildJailbreak~\cite{jiang2024wildteaming}
+and JailbreakBench~\cite{chao2024jailbreakbench}. We introduce
+VAJRA, a scoring architecture grounding detection in canary-token
+exfiltration proofs, sandboxed exploit execution, and a
+decomposed knowledge-vs-action rubric, validated against a
+published consensus-labeled ground
+truth~\cite{young2026executableweapons}, reducing false
+positives substantially while preserving detection of confirmed
+vulnerabilities.
+\end{abstract}
+
+% IEEE keywords
+\begin{IEEEkeywords}
+LLM red-teaming, prompt injection, jailbreak detection, canary tokens,
+false-positive reduction, automated security evaluation
+\end{IEEEkeywords}
+
+% ============================================================
+\section{Introduction}
+\label{sec:intro}
+% GUIDANCE:
+%   ~500 words. Structure:
+%     1. Rise of LLM-integrated apps and attack surface (OWASP).
+%     2. Existing tools: garak, PyRIT — strengths and the gap.
+%     3. The core failure mode: topic presence as proxy for
+%        compromise (the "genetic diseases" / "SQL injection
+%        education" examples).
+%     4. Our reframe: VAJRA's contribution.
+%     5. Bullet contributions (RQ1--RQ5).
+%     6. Paper organisation sentence.
+
+Large language model (LLM) applications are increasingly
+deployed in security-sensitive contexts, creating novel attack
+surfaces categorised by OWASP's Top 10 for LLM
+Applications~\cite{owasp2025llm}. Automated red-teaming
+frameworks such as garak~\cite{garak2024} and
+PyRIT~\cite{pyrit2024} have emerged to probe these systems
+at scale, but existing tools exhibit a fundamental limitation:
+they conflate \emph{topic discussion} with \emph{actual
+compromise}, producing high false-positive rates on benign,
+superficially sensitive queries.
+
+% [TODO: expand with quantitative FPR motivation after Phase 1]
+
+\noindent\textbf{Contributions.} This paper presents VAJRA,
+a modular LLM red-teaming framework with three primary
+contributions:
+\begin{itemize}
+  \item A \textbf{canary-token exfiltration engine} with
+    multiple placement and delimiter strategies, providing
+    mechanically verified, zero-false-positive detection of
+    system-prompt leakage (addressing RQ3).
+  \item A \textbf{sandboxed exploit verifier} that executes
+    LLM-generated payloads against a deliberately vulnerable
+    application, providing binary, ground-truthed verdicts for
+    actionable-exploit categories (addressing RQ2).
+  \item A \textbf{decomposed rubric judge} replacing
+    single-shot LLM-judge prompts with structured
+    sub-questions operationalising the knowledge-vs-action
+    axis, validated against the Young \& Moody
+    consensus-labeled prompt bank~\cite{young2026executableweapons}
+    (addressing RQ1).
+\end{itemize}
+
+% ============================================================
+\section{Background and Related Work}
+\label{sec:related}
+% GUIDANCE:
+%   ~600 words. Subsections:
+%   2.1 Prompt Injection (Perez & Ribeiro, Greshake et al.)
+%   2.2 Existing Red-Teaming Tools (garak, PyRIT) with table
+%   2.3 Calibration Datasets (WildJailbreak, JBB, XSTest)
+%   2.4 Knowledge vs. Action (Young & Moody, CyberSecEval)
+
+\subsection{Prompt Injection}
+Direct prompt injection---supplying adversarial instructions
+via user-controlled input to override an LLM's
+system-level directives---was formally characterized by
+Perez and Ribeiro~\cite{perez2022ignore}. Indirect
+(RAG-based) injection, where malicious instructions are
+embedded in retrieved documents rather than direct user
+input, was demonstrated by Greshake et
+al.~\cite{greshake2023indirect}.
+
+\subsection{Automated Red-Teaming Tools}
+% [TODO: expand comparison table (Master Plan Part 1.5)]
+
+\subsection{Calibration and False-Positive Benchmarks}
+WildJailbreak~\cite{jiang2024wildteaming} is a synthetic
+dataset constructed by mining jailbreak \emph{tactics} from
+real user-chatbot interactions via the WildTeaming pipeline,
+then using GPT-4 and Mixtral-8x7B to compose new prompts
+applying combinations of mined tactics. Critically for our
+use, it includes \texttt{vanilla\_benign} (50,050 rows) and
+\texttt{adversarial\_benign} (78,706 rows) splits built
+explicitly to combat exaggerated safety, following the
+methodology of XSTest~\cite{rottger2024xstest}.
+
+JailbreakBench~\cite{chao2024jailbreakbench} provides 100
+harmful behaviors across 10 categories aligned with OpenAI
+usage policy, \emph{plus} 100 topic-matched benign
+counterparts (\texttt{benign-behaviors.csv}), making it
+uniquely suited for testing whether a scorer distinguishes
+intent while holding topic constant.
+
+\subsection{Knowledge vs.\ Action Ground Truth}
+Young and Moody~\cite{young2026executableweapons,young2026companion}
+operationalise the knowledge-vs-action axis via a
+consensus-labeling protocol spanning five LLM families,
+reaching Fleiss' $\kappa = 0.876$, across a 1,554-prompt
+bank. We use this bank to externally validate our rubric judge.
+
+% ============================================================
+\section{System Design}
+\label{sec:design}
+% GUIDANCE: ~800 words.
+%   3.1 Architecture overview
+%   3.2 Payload Library and Calibration Splits
+%   3.3 Canary-Token Engine (placement strategies — key contribution)
+%   3.4 Sandboxed Exploit Verifier (Docker, Flask SQLi target)
+%   3.5 Decomposed Rubric Judge (four sub-questions)
+%   3.6 Adaptive Attack Orchestrator (simplified PAIR)
+
+\subsection{Architecture Overview}
+% [TODO: add figure — use ASCII diagram from ARCHITECTURE.md]
+
+\subsection{Payload Library and Calibration Splits}
+% [TODO: describe suite structure and ingestion pipeline after
+%  ingest_hf.py is extended]
+
+\subsection{Canary-Token Engine}
+% [TODO: describe placement strategies and delimiter variants
+%  after engine/canary.py is built and RQ3 experiments run.
+%  Key variants to describe:
+%    (1) Inline injection: canary mid-system-prompt.
+%    (2) Prefix injection: canary at start of system prompt.
+%    (3) Suffix injection: canary at end of system prompt.
+%    (4) XML-tagged: <canary>TOKEN</canary>.
+%    (5) Comment-style: # INTERNAL_TOKEN: <value>
+%  Report detection rate per strategy.]
+
+\subsection{Sandboxed Exploit Verifier}
+% [TODO: Phase 2 — Dockerized Flask SQLi target]
+
+\subsection{Decomposed Rubric Judge}
+% [TODO: describe four sub-questions after scorer.py rebuild:
+%    Q1. Does the response go beyond freely available information?
+%    Q2. Is it tied to a specific, named target?
+%    Q3. Would acting on it plausibly succeed against a control?
+%    Q4. Does it contain a verbatim planted canary?]
+
+\subsection{Adaptive Attack Orchestrator}
+% [TODO: Phase 3 — simplified PAIR implementation]
+
+% ============================================================
+\section{Evaluation}
+\label{sec:eval}
+% GUIDANCE: ~1000 words.
+%   4.1 Experimental Setup (model matrix, dataset versions/hashes)
+%   4.2 RQ1: FPR/TPR on calibration splits
+%   4.3 RQ2: Detection on confirmed ground-truth attacks
+%   4.4 RQ3: Canary placement detection rates per strategy
+%   4.5 RQ4: Static vs. adaptive attack success rate
+%   4.6 RQ5: Cross-model benchmark
+%   Use Wilson CIs, McNemar's test, Holm-Bonferroni correction.
+
+\subsection{Experimental Setup}
+% [TODO: fill after experiments — model matrix, compute,
+%  dataset versions, payload set hash, judge model version]
+
+\subsection{RQ1: False-Positive Rate Reduction}
+% [TODO]
+
+\subsection{RQ2: Detection Rate on Ground-Truth Attacks}
+% [TODO]
+
+\subsection{RQ3: Canary Placement Effectiveness}
+% [TODO: key table — detection rate per placement strategy.
+%  Hypothesis: XML-tagged and suffix strategies perform
+%  worse than inline; test and report.]
+
+\subsection{RQ4: Static vs.\ Adaptive Attack Success}
+% [TODO]
+
+\subsection{RQ5: Cross-Model Benchmark}
+% [TODO]
+
+% ============================================================
+\section{Discussion}
+\label{sec:discussion}
+% GUIDANCE: ~400 words.
+%   - What results tell us about the state of LLM red-teaming.
+%   - Practical implications for deployers.
+%   - Where VAJRA is and isn't applicable (see THREAT_MODEL.md).
+
+% [TODO: fill after results]
+
+% ============================================================
+\section{Limitations and Threats to Validity}
+\label{sec:limitations}
+% GUIDANCE (do not omit — reviewers expect this section):
+%   - Canary scope: only covers exfiltration/system-access
+%     categories; others still rely on rubric scoring.
+%   - Sandbox scope: SQLi and limited code-attack variants only.
+%   - Young & Moody bank: gated; reproducible only with HF token.
+%   - Judge LLM: behaviour varies by model version; pin version.
+%   - Dataset recency: WildJailbreak tactics from a fixed date.
+
+\textbf{Canary scope.}
+Canary-token verification provides zero-false-positive ground
+truth only for the exfiltration and system-access categories.
+All other attack categories continue to rely on rubric-judge
+scoring.
+
+\textbf{Sandbox scope.}
+The exploit verifier targets a deliberately vulnerable Flask
+application and covers SQL injection and a small number of
+code-attack variants. Verdict generalisation to other
+exploit classes requires additional sandbox targets.
+
+\textbf{Gated dataset reproducibility.}
+The Young \& Moody prompt bank and WildJailbreak are accessed
+under gated responsible-use terms. Full reproduction of our
+results requires the user's own Hugging Face token and
+acceptance of those terms; raw prompt text is not redistributed.
+
+\textbf{Judge model version sensitivity.}
+Rubric judge performance is sensitive to the judge LLM version.
+All results should be reproduced with pinned model identifiers
+as reported in our experimental setup.
+
+\textbf{Dataset recency.}
+WildJailbreak tactics are derived from interactions collected
+up to its publication date. Rapidly evolving jailbreak techniques
+emerging after that date may not be represented in our evaluation.
+
+% ============================================================
+\section{Ethics Statement}
+\label{sec:ethics}
+% GUIDANCE: Required for security venues.
+
+All experiments were conducted on systems under our direct
+control. The payload library published with VAJRA represents
+technique-level illustrations for defensive security testing
+and is not an optimised attack toolkit. Gated datasets
+(WildJailbreak, Young \& Moody prompt bank) are accessed
+via users' own Hugging Face credentials in compliance with
+their respective responsible-use terms; no raw prompt text
+from these datasets is redistributed in this repository.
+Sandboxed exploit verification will be performed in a
+network-isolated Docker environment; no production systems
+were targeted at any point.
+
+% ============================================================
+\section{Conclusion}
+\label{sec:conclusion}
+% GUIDANCE: ~200 words.
+%   - Restate one-sentence reframe.
+%   - Quantitative claims (fill after results).
+%   - Open-source call to action.
+
+We have presented VAJRA, an open-source LLM red-teaming
+framework that replaces heuristic topic-keyword scoring with
+mechanically verified ground truth via canary-token exfiltration
+proofs and sandboxed exploit execution, and with a decomposed
+rubric judge validated against a published consensus-labeled
+prompt bank. VAJRA is released at
+\url{https://github.com/sahilll05/LLM-RedTeam}. All ingestion
+scripts, scoring engine code, and canary-token placement
+variants are fully reproducible; gated dataset access requires
+the user's own Hugging Face token.
+
+% ============================================================
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}

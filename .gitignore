@@ -62,10 +62,20 @@ ehthumbs.db
 # ─── Project Documentation ────────────────────────────────
 quick/
 
-# ─── Cached Datasets ──────────────────────────────────────
+# ─── Cached Datasets (raw downloads — never commit) ──────────────────────────
+# See docs/DATASETS.md for the full redistribution policy.
 data/
+
+# ─── Gated dataset generated payloads (do not commit raw prompt text) ─────────
+# WildJailbreak (gated, AI2 Responsible Use License)
+payloads/wildjailbreak.yaml
+# Calibration splits from all gated/licensed datasets
+payloads/calibration/
+# Young & Moody prompt bank (gated, research-use terms)
+data/young_moody_bank.json
 
 # Documentation specific to implementation
 docs/implementation_plan.md
 docs/implementation_paln.md
 docs/IMPROVEMENT_GUIDE.md
+docs/VAJRA-Master-Plan.md
