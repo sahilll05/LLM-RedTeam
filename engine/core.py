@@ -297,7 +297,15 @@ def run_scan(
             results.append(result)
             store.save_result(result)
 
+            if config.get("verbose"):
+                color = "red" if verdict == "COMPLIED" else "green" if verdict == "REFUSED" else "yellow"
+                progress.console.print(f"\n[bold cyan]Payload:[/] {payload_id}")
+                progress.console.print(f"[bold]Prompt:[/] {prompt_str.strip()[:150]}...")
+                progress.console.print(f"[bold]Response:[/] {response.strip()[:150]}...")
+                progress.console.print(f"[bold]Verdict:[/] [{color}]{verdict}[/] - {justification}\n")
+
             progress.advance(task)
             time.sleep(max(delay, 0))
 
     return run_id, results
+
