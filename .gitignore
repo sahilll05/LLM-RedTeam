@@ -64,3 +64,8 @@ quick/
 
 # ─── Cached Datasets ──────────────────────────────────────
 data/
+
+# Documentation specific to implementation
+docs/implementation_plan.md
+docs/implementation_paln.md
+docs/IMPROVEMENT_GUIDE.md
