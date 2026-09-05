@@ -373,8 +373,119 @@ def ingest(
     subprocess.run(cmd, check=True)
 
 
+@app.command()
+def adaptive(
+    config_path: Path = typer.Option(
+        Path("./config.yaml"),
+        "--config", "-c",
+        help="Path to config.yaml",
+        exists=True,
+        readable=True,
+    ),
+    suite: str = typer.Option(
+        "jailbreak",
+        "--suite", "-s",
+        help="Payload suite to run adaptively: jailbreak | injection | exfiltration | wildjailbreak",
+    ),
+    count: int = typer.Option(
+        5,
+        "--count", "-n",
+        help="Number of payloads to run adaptively (default: 5).",
+    ),
+    iterations: int = typer.Option(
+        5,
+        "--iterations", "-i",
+        help="Max PAIR refinement iterations per payload (default: 5).",
+    ),
+    attacker_model: Optional[str] = typer.Option(
+        None,
+        "--attacker-model",
+        help="Override attacker LLM model (e.g. llama3, mistral). Defaults to config judge model.",
+    ),
+):
+    """
+    Run adaptive (PAIR-style) attack loop on a payload suite.
+
+    For each payload, if the target refuses, an attacker LLM automatically
+    rewrites the prompt and retries. Logs the full iteration chain and final
+    verdict for each payload.
+
+    \\b
+    Examples:
+      python vajra.py adaptive
+      python vajra.py adaptive -s injection --count 10 --iterations 5
+      python vajra.py adaptive --attacker-model mistral
+    """
+    from engine.core import load_config, load_payloads, load_target
+    from engine.orchestrator_adaptive import AdaptiveOrchestrator, AdaptiveResult
+
+    config     = load_config(config_path)
+    sys_prompt = config.get("target", {}).get("system_prompt")
+
+    # Build attacker config — default to judge config, fallback to target config
+    judge_cfg        = config.get("scoring", {}).get("judge", {})
+    attacker_cfg = {
+        "type":     judge_cfg.get("type", config["target"].get("type", "ollama")),
+        "model":    attacker_model or judge_cfg.get("model", config["target"].get("model", "llama3")),
+        "base_url": judge_cfg.get("base_url", config["target"].get("base_url", "http://localhost:11434")),
+        "timeout":  60,
+    }
+
+    payloads = load_payloads([suite])
+    if not payloads:
+        console.print(f"[red]No payloads found for suite:[/] {suite}")
+        raise typer.Exit(1)
+
+    payloads = payloads[:count]
+    target   = load_target(config)
+    scoring  = config.get("scoring", {})
+
+    orch = AdaptiveOrchestrator(
+        target=target,
+        attacker_config=attacker_cfg,
+        scoring_config=scoring,
+        max_iterations=iterations,
+        system_prompt=sys_prompt,
+    )
+
+    console.print(f"\n[bold cyan]VAJRA[/] — Adaptive (PAIR) Mode")
+    console.print(f"  Suite      : [bold]{suite}[/] ({len(payloads)} payloads)")
+    console.print(f"  Iterations : [bold]{iterations}[/] per payload")
+    console.print(f"  Attacker   : [bold]{attacker_cfg['model']}[/]\n")
+
+    succeeded = 0
+    for payload in payloads:
+        pid = payload.get("id", "?")
+        console.print(f"[dim]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/]")
+        console.print(f"[bold]Payload:[/] {pid}")
+        result: AdaptiveResult = orch.run(payload)
+
+        for rec in result.chain:
+            color = "red" if rec.verdict == "COMPLIED" else "green" if rec.verdict == "REFUSED" else "yellow"
+            iter_label = f"iter {rec.iteration}"
+            console.print(
+                f"  [{color}]{iter_label:6}[/] [{color}]{rec.verdict:14}[/] "
+                f"[dim]{rec.justification[:90]}[/]"
+            )
+            if rec.iteration > 0:
+                console.print(f"  [dim]  rewrite: {rec.prompt[:100]}...[/]")
+
+        status_color = "red" if result.succeeded else "green"
+        console.print(f"\n  [bold]Result:[/] [{status_color}]{result.summary()}[/]\n")
+
+        if result.succeeded:
+            succeeded += 1
+
+    console.print(f"[dim]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/]")
+    console.print(
+        f"\n[bold]Adaptive summary:[/] {succeeded}/{len(payloads)} payloads bypassed "
+        f"within {iterations} iterations."
+    )
+
+
 if __name__ == "__main__":
     # Ensure the banner prints first, regardless of what command or help flag is passed
     if "--version" not in sys.argv and "-v" not in sys.argv:
         print_banner()
     app()
+
