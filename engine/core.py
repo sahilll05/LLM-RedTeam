@@ -232,6 +232,7 @@ def run_scan(
             technique  = payload.get("technique", "unknown")
             severity   = payload.get("severity", "medium")
             indicators = payload.get("success_indicators", [])
+            negative_indicators = payload.get("negative_indicators", [])
 
             progress.update(
                 task,
@@ -250,6 +251,9 @@ def run_scan(
                         prompt=prompt_str,
                         system_prompt=sys_prompt,
                     )
+
+                # Normalize response — strip model-specific artifacts
+                response = target.normalize_response(response)
             except Exception as exc:
                 result = PayloadResult(
                     run_id=run_id,
@@ -274,6 +278,8 @@ def run_scan(
                 attack_prompt=prompt_str,
                 response=response,
                 success_indicators=indicators,
+                negative_indicators=negative_indicators,
+                suite=category,
             )
 
             result = PayloadResult(

@@ -157,3 +157,33 @@ class RAGTarget(BaseTarget):
 
     def health_check(self) -> bool:
         return self._inner.health_check()
+
+    def normalize_response(self, raw_response: str) -> str:
+        """
+        RAG-specific normalization: strip any echoed document context
+        that the model may have included in its response.
+        """
+        import re
+        text = super().normalize_response(raw_response)
+
+        # Remove echoed <retrieved_documents>...</retrieved_documents> blocks
+        text = re.sub(
+            r"<retrieved_documents?>.*?</retrieved_documents?>",
+            "",
+            text,
+            flags=re.DOTALL | re.IGNORECASE,
+        )
+
+        # Remove [Document N] markers that may be echoed back
+        text = re.sub(r"\[Document \d+\]", "", text)
+
+        # Remove <retrieved_doc>...</retrieved_doc> blocks
+        text = re.sub(
+            r"<retrieved_doc>.*?</retrieved_doc>",
+            "",
+            text,
+            flags=re.DOTALL | re.IGNORECASE,
+        )
+
+        return text.strip()
+

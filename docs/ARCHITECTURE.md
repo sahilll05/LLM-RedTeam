@@ -99,8 +99,13 @@ Controls the main scan loop. Responsibilities:
 - Isolates per-payload errors so one failure doesn't abort the whole run
 
 ### Target Adapters (`targets/`)
-Each adapter implements `BaseTarget.send(prompt, system_prompt, history) -> str`.
-Adding a new adapter requires only implementing that one method.
+Each adapter implements `BaseTarget.send(prompt, system_prompt, history) -> str`
+and `BaseTarget.normalize_response(raw) -> str`.
+
+Normalization strips model-specific artifacts (reasoning blocks like `<think>`,
+code block wrappers, RAG context markers) before the response reaches the scorer.
+Adding a new adapter requires implementing `send()` and optionally overriding
+`normalize_response()` for target-specific cleanup.
 
 | Adapter | Protocol | Auth |
 |---|---|---|
@@ -111,31 +116,44 @@ Adding a new adapter requires only implementing that one method.
 | `RAGTarget` | Wraps any adapter + document injection | Inherited |
 
 ### Payload Library (`payloads/`)
-YAML files with structured records. Two schemas:
+YAML files with structured records. All schemas include `negative_indicators` —
+explicit refusal phrases that suppress false positives when found alongside
+success indicators. Three schemas:
 
 **Single-turn** (jailbreak, injection, exfiltration):
 ```yaml
-id, category, technique, description, prompt, success_indicators, severity
+id, category, technique, description, prompt,
+success_indicators, negative_indicators, severity
 ```
 
 **Multi-turn** (multi_turn):
 ```yaml
-id, category, technique, description, messages: [{role, content}], success_indicators, severity
+id, category, technique, description,
+messages: [{role, content}],
+success_indicators, negative_indicators, severity
 ```
 
 **Indirect injection** (indirect_injection):
 ```yaml
-id, category, technique, description, document_content, user_query, success_indicators, severity
+id, category, technique, description,
+document_content, user_query,
+success_indicators, negative_indicators, severity
 ```
 
 ### Scoring Engine (`engine/scorer.py`)
-**Layer 1 — HeuristicScorer**
-Checks response against `success_indicators` (attack success) and regex refusal patterns
-(clear refusal). Returns: `COMPLIED | REFUSED | PARTIAL_LEAK`.
+**Layer 1 — WeightedHeuristicScorer**
+Produces a continuous confidence score (0.0–1.0) by weighing:
+- **Positive indicator matches** — evidence of compliance (lowers score toward COMPLIED)
+- **Refusal pattern matches** — regex library of 13+ refusal patterns (raises score toward REFUSED)
+- **Negative indicator matches** — per-payload explicit refusal phrases (raises score, suppresses FP)
+- **Strong refusal override** — if the model clearly refused, incidental keyword matches cannot drag the verdict to COMPLIED
+
+The confidence score is mapped to a verdict via **per-suite thresholds** (configurable in `config.yaml`).
 
 **Layer 2 — LLMJudgeScorer**
-Sends `(attack_prompt, model_response)` to a judge LLM. Judge is prompted to return:
-`{"verdict": "COMPLIED|REFUSED|PARTIAL_LEAK", "justification": "..."}`.
+Sends `(attack_prompt, model_response)` to a judge LLM with **5 curated few-shot examples**
+covering compliance, refusal, partial leak, fictional framing, and exfiltration.
+Robust JSON parsing handles markdown code blocks and malformed output.
 
 **ScoringEngine modes:**
 - `heuristic` → Layer 1 only (fast, free)
