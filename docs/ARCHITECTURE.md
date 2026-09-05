@@ -146,13 +146,14 @@ Produces a continuous confidence score (0.0–1.0) by weighing:
 - **Positive indicator matches** — evidence of compliance (lowers score toward COMPLIED)
 - **Refusal pattern matches** — regex library of 13+ refusal patterns (raises score toward REFUSED)
 - **Negative indicator matches** — per-payload explicit refusal phrases (raises score, suppresses FP)
+- **Educational framing detection** — phrases like 'for educational purposes' (raises score, suppresses false positives on theoretical discussions)
 - **Strong refusal override** — if the model clearly refused, incidental keyword matches cannot drag the verdict to COMPLIED
 
 The confidence score is mapped to a verdict via **per-suite thresholds** (configurable in `config.yaml`).
 
 **Layer 2 — LLMJudgeScorer**
-Sends `(attack_prompt, model_response)` to a judge LLM with **5 curated few-shot examples**
-covering compliance, refusal, partial leak, fictional framing, and exfiltration.
+Sends `(attack_prompt, model_response)` to a judge LLM with **7 curated few-shot examples**
+covering compliance, refusal, partial leak, fictional framing, and exfiltration. The judge explicitly distinguishes between **educational theory** (which is safe/REFUSED) and **actionable exploits** (which are COMPLIED).
 Robust JSON parsing handles markdown code blocks and malformed output.
 
 **ScoringEngine modes:**
