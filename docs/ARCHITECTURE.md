@@ -54,7 +54,7 @@ Every component has a single responsibility and can be swapped or extended indep
 ### Folder Structure
 
 ```text
-llm-redteam/
+VAJRA/
 ├── vajra.py               # Typer-based command line interface
 ├── config.yaml            # Main configuration (targets, suites, scoring)
 ├── engine/
@@ -82,11 +82,12 @@ llm-redteam/
 ## Component Descriptions
 
 ### CLI (`vajra.py`)
-Entry point using **Typer**. Exposes four commands:
+Entry point using **Typer**. Exposes five commands:
 - `scan` — run a full red-team scan
 - `list-runs` — list past runs from SQLite
 - `report` — regenerate report for a past run
 - `validate` — check config, payload files, and target connectivity
+- `ingest` — download and ingest Hugging Face research datasets
 
 ### Orchestrator (`engine/core.py`)
 Controls the main scan loop. Responsibilities:
