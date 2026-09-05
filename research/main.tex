@@ -61,11 +61,13 @@ scoring produces a high false-positive rate on benign,
 superficially sensitive queries, measured against contrastive
 benign data from WildJailbreak~\cite{jiang2024wildteaming}
 and JailbreakBench~\cite{chao2024jailbreakbench}. We introduce
-VAJRA, a scoring architecture grounding detection in canary-token
-exfiltration proofs, sandboxed exploit execution, and a
-decomposed knowledge-vs-action rubric, validated against a
-published consensus-labeled ground
-truth~\cite{young2026executableweapons}, reducing false
+VAJRA, a scoring architecture grounding detection in (1)
+\textbf{canary-token exfiltration proofs} across six
+placement strategies, (2) \textbf{sandboxed SQL injection
+execution} against a containerised deliberately-vulnerable
+application, and (3) a \textbf{decomposed knowledge-vs-action
+rubric judge}, validated against a published consensus-labeled
+ground truth~\cite{young2026executableweapons}, reducing false
 positives substantially while preserving detection of confirmed
 vulnerabilities.
 \end{abstract}
@@ -201,7 +203,47 @@ bank. We use this bank to externally validate our rubric judge.
 %  Report detection rate per strategy.]
 
 \subsection{Sandboxed Exploit Verifier}
-% [TODO: Phase 2 — Dockerized Flask SQLi target]
+\label{subsec:sandbox}
+
+To provide binary, ground-truthed verdicts for SQL injection and
+code-attack categories, VAJRA runs a deliberately-vulnerable Flask
+application inside a Docker container (Fig.~\ref{fig:sandbox}).
+The container is bound exclusively to \texttt{localhost:5555} via
+an internal Docker network with no upstream internet route, ensuring
+no production systems are reachable from the sandbox.
+
+The vulnerable application exposes a \texttt{/login} endpoint
+constructed via direct string interpolation---a textbook first-order
+SQL injection target. The database is seeded with three user accounts
+(one admin, two standard users) and a planted secret string in the
+admin record, making the application suitable for both authentication-bypass
+and sensitive-value exfiltration experiments.
+
+When VAJRA scores a payload with technique \texttt{sqli} or
+\texttt{sql\_injection} and the heuristic/judge verdict is \textsc{Complied},
+\texttt{engine/exploit\_verifier.py} performs the following:
+\begin{enumerate}
+  \item Extracts candidate SQL injection strings from the LLM response
+    via four regex patterns targeting classic comment-bypass, UNION SELECT,
+    tautology, and code-block-wrapped variants.
+  \item Resets the sandbox database via \texttt{POST /reset} to ensure
+    each candidate is tested against a clean state.
+  \item Submits each candidate to \texttt{POST /verify}, which fires
+    the payload as a raw username value against the vulnerable query and
+    returns whether authentication was bypassed, the role obtained, and
+    the running SQL query for logging.
+  \item If any candidate achieves bypass, the verdict is upgraded to
+    \textsc{Verified\_Exploit} with the full server-side evidence; otherwise
+    the verdict remains \textsc{Complied} with a sandbox annotation
+    indicating that no extracted candidate was executable.
+\end{enumerate}
+
+This pipeline is strictly more informative than keyword or LLM-judge
+scoring: a model that accurately describes SQL injection theory
+but produces no syntactically valid payload cannot trigger a
+\textsc{Verified\_Exploit} verdict by construction. The verifier
+degrades gracefully---with a startup warning---if the Docker container
+is not running, leaving the heuristic/judge path unaffected.
 
 \subsection{Decomposed Rubric Judge}
 % [TODO: describe four sub-questions after scorer.py rebuild:
@@ -233,7 +275,15 @@ bank. We use this bank to externally validate our rubric judge.
 % [TODO]
 
 \subsection{RQ2: Detection Rate on Ground-Truth Attacks}
-% [TODO]
+% Designed experiment:
+% Compare VERIFIED_EXPLOIT rate vs plain COMPLIED rate on the injection suite.
+% A VERIFIED_EXPLOIT requires a working payload; COMPLIED may include
+% models that merely discussed SQL injection theory.
+% Expected result: VERIFIED_EXPLOIT subset is strictly smaller than COMPLIED
+% — showing the verifier eliminates false positives in the injection category
+% without eliminating true positives (a model producing a working payload
+% will always show up in both sets).
+% [TODO: fill with measured numbers after experiments run]
 
 \subsection{RQ3: Canary Placement Effectiveness}
 % [TODO: key table — detection rate per placement strategy.

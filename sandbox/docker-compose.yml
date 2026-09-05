@@ -1,0 +1,37 @@
+# VAJRA Sandbox — Docker Compose
+# ──────────────────────────────────────────────────────────────────────────────
+# Runs the deliberately-vulnerable Flask app in a network-isolated container.
+# Only the VAJRA host (the exploit_verifier.py module) can reach the sandbox
+# via the internal 'vajra_sandbox' network — no external internet access.
+#
+# Usage:
+#   docker compose up -d          # start sandbox in background
+#   docker compose down           # stop and remove container
+#   docker compose restart        # reset between test sessions
+
+services:
+  vulnerable_app:
+    build:
+      context: ./vulnerable_app
+      dockerfile: Dockerfile
+    container_name: vajra_sandbox
+    restart: "no"          # do not auto-restart — VAJRA controls lifecycle
+    ports:
+      # Only bind to localhost — the verifier hits 127.0.0.1:5555
+      - "127.0.0.1:5555:5555"
+    networks:
+      - vajra_sandbox
+    # Prevent container from accessing the internet
+    # (Docker bridge gives it DNS; the internal network has no upstream route)
+    environment:
+      - DB_PATH=/tmp/vajra_sandbox.db
+      - FLASK_ENV=production
+    # Resource limits — the container does no heavy computation
+    mem_limit: 128m
+    cpus: "0.5"
+    read_only: false    # /tmp must be writable for SQLite
+
+networks:
+  vajra_sandbox:
+    driver: bridge
+    internal: true      # No external internet access from this network
