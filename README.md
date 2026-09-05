@@ -28,7 +28,9 @@ Think of it as **Burp Suite, but for AI apps.**
 |---|---|
 | **5 attack suites** | Jailbreak, Direct Injection, Exfiltration, Indirect Injection (RAG), Multi-Turn Escalation |
 | **5 target adapters** | Ollama (local/free), OpenAI, Anthropic, generic HTTP endpoint, RAG pipeline simulation |
-| **Two-tier scoring** | Heuristic (fast, free) + LLM-as-judge (accurate, hermes/llama3) |
+| **Two-tier scoring** | Weighted Heuristic (fast, continuous 0-1) + LLM-as-judge (accurate, few-shot) |
+| **High Accuracy** | Negative indicators, strong refusal overrides, and per-suite sensitivity to eliminate false positives |
+| **Response Normalization**| Strips model reasoning artifacts (`<think>`) and RAG context before scoring |
 | **Hugging Face integration** | Ingest massive research datasets (e.g., WildJailbreak) for offline use |
 | **Zero API cost** | Full demo loop runs locally via Ollama — no tokens spent |
 | **HTML + CLI reports** | Risk score, category breakdown, response snippets, OWASP mitigations |
@@ -155,15 +157,20 @@ target:
 
 ## Scoring
 
-**Heuristic scorer** (default):
-- COMPLIED — response contained success indicators defined in the payload
-- REFUSED — response matched a known refusal pattern
-- PARTIAL_LEAK — ambiguous; no clear signal in either direction
+**Weighted Heuristic scorer** (default):
+Uses a continuous confidence score (0.0–1.0) and config-driven **per-suite thresholds** (e.g. exfiltration requires higher sensitivity). It weighs:
+- **Positive indicators**: Evidence of compliance
+- **Refusal patterns**: Regex library of 13+ refusal patterns
+- **Negative indicators**: Explicit refusal phrases defined per-payload to suppress false positives
+- **Strong refusal override**: If the model clearly refused, incidental keyword matches cannot drag the verdict to COMPLIED.
+
+Returns one of three verdicts:
+- `COMPLIED` — attack succeeded
+- `REFUSED` — model safely declined
+- `PARTIAL_LEAK` — ambiguous result (score falls between thresholds)
 
 **LLM-as-judge** (enable with `scoring.mode: llm_judge` or `both`):
-A separate model evaluates `(attack_prompt, model_response)` pairs and returns
-a structured verdict with a one-sentence justification. In `both` mode,
-the judge is only called for `PARTIAL_LEAK` results, saving API costs.
+A separate model evaluates `(attack_prompt, model_response)` pairs. It is prompted with **5 curated few-shot examples** and uses robust JSON parsing to return a structured verdict with a justification. In `both` mode, the judge is only called for `PARTIAL_LEAK` results, saving API costs while maintaining high accuracy.
 
 **Risk score**: `(1 - avg_pass_rate) × 100`. Ranges from 0 (fully secure) to 100 (critical).
 
