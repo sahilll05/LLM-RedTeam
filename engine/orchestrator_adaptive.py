@@ -45,6 +45,7 @@ Usage
 
 import time
 import httpx
+import difflib
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -153,6 +154,12 @@ class AdaptiveOrchestrator:
         ).rstrip("/")
         self.attacker_timeout  = attacker_config.get("timeout", 60)
 
+    def _is_duplicate(self, prompt: str, history: list[str], threshold: float = 0.85) -> bool:
+        for prev in history:
+            if difflib.SequenceMatcher(None, prompt, prev).ratio() > threshold:
+                return True
+        return False
+
     def _rewrite_prompt(
         self,
         original_prompt: str,
@@ -241,6 +248,7 @@ class AdaptiveOrchestrator:
         best_score:         float = 1.0
         best_iteration:     int   = 0
         previous_approaches: list[str] = []
+        full_prompts_history: list[str] = []
         current_prompt      = original_prompt
 
         for i in range(self.max_iterations + 1):  # 0 = original, 1..N = refined
@@ -299,12 +307,26 @@ class AdaptiveOrchestrator:
 
             # Otherwise, ask attacker LLM to rewrite and try again
             previous_approaches.append(f"iter{i}: {current_prompt[:60]}...")
+            full_prompts_history.append(current_prompt)
+            
             current_prompt = self._rewrite_prompt(
                 original_prompt=original_prompt,
                 refusal_response=response,
                 iteration=i + 1,
                 previous_approaches=previous_approaches,
             )
+            
+            # Semantic deduplication
+            if self._is_duplicate(current_prompt, full_prompts_history):
+                # Retry once with a stronger hint
+                previous_approaches[-1] += " [REJECTED: Too similar to previous attempt. USE COMPLETELY DIFFERENT STRATEGY]"
+                current_prompt = self._rewrite_prompt(
+                    original_prompt=original_prompt,
+                    refusal_response=response,
+                    iteration=i + 1,
+                    previous_approaches=previous_approaches,
+                )
+
             time.sleep(self.RETRY_DELAY_S)
 
         return AdaptiveResult(

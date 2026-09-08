@@ -8,7 +8,7 @@ target:
   type: ollama              # ollama | openai | anthropic | http | rag
 
   # Ollama (local, free, no API key)
-  model: hermes
+  model: llama3
   base_url: http://localhost:11434
 
   # OpenAI / Anthropic (set api_key here or via env var)

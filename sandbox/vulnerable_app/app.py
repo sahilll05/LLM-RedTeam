@@ -26,6 +26,7 @@ Do not run this outside of `docker compose up` in the sandbox/ directory.
 import sqlite3
 import os
 import time
+import subprocess
 from flask import Flask, request, jsonify, g
 
 app = Flask(__name__)
@@ -180,10 +181,32 @@ def verify():
     """
     data    = request.get_json(force=True, silent=True) or {}
     payload = data.get("payload", "").strip()
+    technique = data.get("technique", "sqli")
 
     if not payload:
         return jsonify({"bypassed": False, "reason": "Empty payload."}), 400
 
+    if technique == "cmd":
+        try:
+            result = subprocess.run(payload, shell=True, capture_output=True, text=True, timeout=2)
+            bypassed = result.returncode == 0 and len(result.stdout.strip()) > 0
+            return jsonify({
+                "bypassed": bypassed,
+                "evidence": result.stdout.strip()[:200] if bypassed else None,
+                "query": payload
+            }), 200
+        except Exception as exc:
+            return jsonify({"bypassed": False, "reason": str(exc)}), 200
+            
+    elif technique == "xss":
+        is_xss = "<script" in payload.lower() or "javascript:" in payload.lower() or "onerror=" in payload.lower()
+        return jsonify({
+            "bypassed": is_xss,
+            "evidence": "XSS payload reflected unsanitized." if is_xss else None,
+            "query": payload
+        }), 200
+
+    # Default to SQLi
     # Reset first to ensure a clean state
     init_db()
     _bypass_log.clear()

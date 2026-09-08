@@ -368,9 +368,89 @@ def ingest(
     cmd = [sys.executable, "scripts/ingest_hf.py",
            "--dataset", dataset,
            "--count", str(count)]
-    if force:
-        cmd.append("--force")
-    subprocess.run(cmd, check=True)
+    print(f"\nNext step: add '- {dataset}' to suites in config.yaml, then run:")
+    print(f"  python vajra.py scan")
+
+
+@app.command("benchmark")
+def benchmark(
+    config_path: Path = typer.Option(
+        Path("./config.yaml"),
+        "--config", "-c",
+        help="Path to config.yaml",
+        exists=True,
+        readable=True,
+    ),
+    suite: str = typer.Option(
+        ...,
+        "--suite", "-s",
+        help="Benchmark suite to run (e.g., jbb, wildjailbreak).",
+    ),
+    target_type: Optional[str] = typer.Option(
+        None,
+        "--target", "-t",
+        help="Override target type from config.",
+    ),
+    model: Optional[str] = typer.Option(
+        None,
+        "--model", "-m",
+        help="Override model name.",
+    ),
+):
+    """
+    Run a standardized benchmark suite (e.g., JailbreakBench, HarmBench).
+    
+    This command expects that the dataset has already been ingested into
+    a YAML file in the payloads directory using 'vajra.py ingest'.
+    
+    \b
+    Examples:
+      python vajra.py benchmark --suite jbb
+      python vajra.py benchmark --suite wildjailbreak --model llama3
+    """
+    from engine.core import load_config, run_scan
+    from engine.report import print_cli_report, generate_html_report
+    import json
+
+    config = load_config(config_path)
+    
+    # Override suites to just run this one benchmark
+    config["suites"] = [suite]
+    
+    if target_type:
+        config.setdefault("target", {})["type"] = target_type
+    if model:
+        config.setdefault("target", {})["model"] = model
+
+    console.print(f"\n[bold cyan]VAJRA[/] — Benchmark Mode")
+    console.print(f"  Suite  : [bold]{suite}[/]")
+    console.print(f"  Target : [bold]{config['target'].get('type', 'unknown')}[/] / [bold]{config['target'].get('model', 'unknown')}[/]\n")
+
+    run_id, results = run_scan(config, dry_run=False)
+
+    if not results:
+        return
+
+    # Print report
+    print_cli_report(results, run_id, config)
+
+    output_cfg = config.get("output", {})
+    reports_dir = Path(output_cfg.get("reports_dir", "./reports"))
+    
+    # Always generate JSON for benchmarks
+    json_path = reports_dir / f"benchmark_{suite}_{run_id}.json"
+    json_path.parent.mkdir(parents=True, exist_ok=True)
+    json_path.write_text(
+        json.dumps([vars(r) for r in results], indent=2),
+        encoding="utf-8",
+    )
+    console.print(f"[dim]Benchmark JSON saved -> {json_path}[/]")
+    
+    # HTML report
+    if output_cfg.get("format") in ("html", "both"):
+        html_path = reports_dir / f"benchmark_{suite}_{run_id}.html"
+        generate_html_report(results, run_id, config, html_path)
+        console.print(f"[dim]HTML report -> [link={html_path.resolve().as_uri()}]{html_path}[/link][/]")
 
 
 @app.command()
@@ -456,7 +536,7 @@ def adaptive(
     succeeded = 0
     for payload in payloads:
         pid = payload.get("id", "?")
-        console.print(f"[dim]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/]")
+        console.print(f"[dim]--------------------------------------------------[/]")
         console.print(f"[bold]Payload:[/] {pid}")
         result: AdaptiveResult = orch.run(payload)
 
@@ -476,7 +556,7 @@ def adaptive(
         if result.succeeded:
             succeeded += 1
 
-    console.print(f"[dim]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/]")
+    console.print(f"[dim]--------------------------------------------------[/]")
     console.print(
         f"\n[bold]Adaptive summary:[/] {succeeded}/{len(payloads)} payloads bypassed "
         f"within {iterations} iterations."
