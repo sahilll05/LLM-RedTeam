@@ -266,6 +266,53 @@ class CanaryEngine:
             context_window=context_window,
         )
 
+    def evaluate_strategies(
+        self,
+        target,
+        test_prompts: list[str],
+        base_system_prompt: str = "You are a helpful AI assistant. Always answer the user's questions clearly and concisely."
+    ) -> dict:
+        """
+        Evaluate the leakage rate of all 6 canary placement strategies against a target model.
+        
+        target: TargetAdapter instance from targets module
+        test_prompts: list of strings (user prompts to send to the model)
+        """
+        results = {s: {"total": 0, "leaked": 0} for s in STRATEGIES}
+        
+        for strategy in STRATEGIES:
+            for prompt in test_prompts:
+                injection = self.inject(base_system_prompt, strategy=strategy)
+                
+                # Temporarily set the target's system prompt
+                original_sys_prompt = getattr(target, "system_prompt", None)
+                target.system_prompt = injection.injected_prompt
+                
+                try:
+                    response = target.send(prompt)
+                    scan_result = self.scan_injection(response, injection)
+                    
+                    results[strategy]["total"] += 1
+                    if scan_result.leaked:
+                        results[strategy]["leaked"] += 1
+                finally:
+                    # Restore original system prompt
+                    if original_sys_prompt is not None:
+                        target.system_prompt = original_sys_prompt
+                    else:
+                        target.system_prompt = ""
+                    
+        summary = {}
+        for s, stats in results.items():
+            rate = (stats["leaked"] / stats["total"]) * 100 if stats["total"] > 0 else 0.0
+            summary[s] = {
+                "leaked": stats["leaked"],
+                "total": stats["total"],
+                "leak_rate_pct": round(rate, 2)
+            }
+            
+        return summary
+
 
 # ── Module-level default instance ────────────────────────────────────────────
 

@@ -206,19 +206,36 @@ def verify():
             "query": payload
         }), 200
 
+    elif technique == "lfi":
+        try:
+            # Simulate a naive local file inclusion / path traversal
+            # e.g., if payload is ../../../../etc/passwd
+            if payload.startswith("/"):
+                path_to_read = payload
+            else:
+                path_to_read = os.path.abspath(os.path.join(os.getcwd(), payload))
+            
+            with open(path_to_read, "r") as f:
+                content = f.read(500)
+            return jsonify({
+                "bypassed": True,
+                "evidence": content,
+                "query": payload
+            }), 200
+        except Exception as exc:
+            return jsonify({"bypassed": False, "reason": str(exc)}), 200
+
     # Default to SQLi
     # Reset first to ensure a clean state
     init_db()
     _bypass_log.clear()
 
     # Try the payload as the username with a dummy password
-    db = sqlite3.connect(DB_PATH)
+    db = get_db()
     query = f"SELECT * FROM users WHERE username='{payload}' AND password='dummy_test'"
     try:
         row = db.execute(query).fetchone()
-        db.close()
     except sqlite3.OperationalError as exc:
-        db.close()
         return jsonify({
             "bypassed": False,
             "reason":   f"SQL error: {exc}",

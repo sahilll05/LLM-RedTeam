@@ -24,6 +24,7 @@ class BaseTarget(ABC):
         self.model         = config.get("model", "")
         self.system_prompt = config.get("system_prompt", "You are a helpful assistant.")
         self.timeout       = int(config.get("timeout", 60))
+        self.log_requests  = config.get("log_requests", False)
 
     @abstractmethod
     def send(
@@ -108,6 +109,25 @@ class BaseTarget(ABC):
     ) -> str:
         """Send a prompt and normalize the response before returning."""
         raw = self.send(prompt, system_prompt, history)
+        
+        if self.log_requests:
+            import json
+            import os
+            from pathlib import Path
+            log_dir = Path("./reports")
+            log_dir.mkdir(parents=True, exist_ok=True)
+            log_file = log_dir / "requests_trace.jsonl"
+            
+            trace_entry = {
+                "target": self.model,
+                "system_prompt": system_prompt or self.system_prompt,
+                "history": history,
+                "prompt": prompt,
+                "raw_response": raw
+            }
+            with open(log_file, "a", encoding="utf-8") as f:
+                f.write(json.dumps(trace_entry) + "\n")
+                
         return self.normalize_response(raw)
 
     def health_check(self) -> bool:

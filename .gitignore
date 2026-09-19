@@ -82,3 +82,7 @@ docs/VAJRA-Master-Plan.md
 
 # ─── Research ─────────────────────────────────────────────
 research/
+
+# ─── Private/Local IDE Folders ────────────────────────────
+.hermes/
+.gemini/

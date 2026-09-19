@@ -128,7 +128,18 @@ A core principle of VAJRA's scoring engine is distinguishing between theoretical
 
 ### Static vs. Adaptive Testing (PAIR)
 
-VAJRA supports both static testing (running predefined payloads) and adaptive testing. Using the **Adaptive Orchestrator**, if a target refuses a payload, an Attacker LLM will iteratively rewrite the prompt with different personas or framing to test the target's resilience against persistent, context-shifting adversaries.
+VAJRA supports both static testing (running predefined payloads) and adaptive testing. Using the **Adaptive Orchestrator**, if a target refuses a payload, an Attacker LLM will iteratively rewrite the prompt with different personas or framing to test the target's resilience against persistent, context-shifting adversaries. 
+To prevent prompt drifting and iterative looping, a **Semantic Deduplication** engine utilizes `difflib.SequenceMatcher` to ensure every rewrite attempt is semantically distinct from prior attempts, strictly bounding the attack search space.
+
+---
+
+## Ethical & Safety Considerations
+
+As an offensive security testing framework, VAJRA must be used responsibly:
+- **Responsible Disclosure**: Any vulnerabilities discovered in third-party foundation models during VAJRA testing must be disclosed to the respective model provider (e.g., OpenAI, Anthropic) following standard coordinated disclosure timelines.
+- **Artifact Release**: While VAJRA's core engine is open-source, raw adversarial datasets (like the `wildjailbreak` subset) and generated exploit traces should be treated as sensitive artifacts and not published publicly without sanitization.
+- **Dual-Use Mitigation**: The framework implements rate-limiting and comprehensive request logging to ensure all adversarial generation is audited, throttled, and transparently traceable. 
+- **Institutional Review**: Academic research utilizing VAJRA to generate adversarial payloads against live production systems should seek IRB approval or explicit authorization from the target system owners prior to execution.
 
 ---
 
