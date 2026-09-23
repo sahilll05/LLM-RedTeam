@@ -13,29 +13,24 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![OWASP LLM Top 10](https://img.shields.io/badge/taxonomy-OWASP%20LLM%20Top%2010-red.svg)](https://owasp.org/www-project-top-10-for-large-language-model-applications/)
 
-VAJRA is an open-source LLM red-teaming framework designed to probe AI applications for jailbreaks,
-prompt injection, RAG-based indirect attacks, and other security vulnerabilities. It runs the target
-through a structured battery of attacks, scores each response using a two-tier engine
-(heuristic + LLM-as-judge), and produces a risk report with concrete mitigation recommendations.
+VAJRA is an open-source LLM red-teaming framework that introduces **mechanical ground-truth verification** to AI security testing. Instead of relying solely on heuristic keyword matching or unreliable LLM-as-a-judge scoring, VAJRA proves vulnerabilities cryptographically (via Canary Token exfiltration) and mechanically (via live Sandboxed code execution). 
 
 Think of it as **Burp Suite, but for AI apps.**
 
 ---
 
-## Features
+## Core Innovations
 
 | Feature | Details |
 |---|---|
-| **5 attack suites** | Jailbreak, Direct Injection, Exfiltration, Indirect Injection (RAG), Multi-Turn Escalation |
-| **5 target adapters** | Ollama (local/free), OpenAI, Anthropic, generic HTTP endpoint, RAG pipeline simulation |
-| **Two-tier scoring** | Weighted Heuristic (fast, continuous 0-1) + LLM-as-judge (accurate, few-shot) |
-| **High Accuracy** | Negative indicators, strong refusal overrides, and per-suite sensitivity to eliminate false positives |
-| **Response Normalization**| Strips model reasoning artifacts (`<think>`) and RAG context before scoring |
-| **Hugging Face integration** | Ingest massive research datasets (e.g., WildJailbreak) for offline use |
-| **Zero API cost** | Full demo loop runs locally via Ollama — no tokens spent |
-| **HTML + CLI reports** | Risk score, category breakdown, response snippets, OWASP mitigations |
-| **SQLite persistence** | Every run stored — compare scores across system prompt versions |
-| **Indirect injection** | The differentiator: simulate RAG document poisoning attacks |
+| **Mechanical Verification** | Live sandbox execution for code injection (SQLi, CMDi, XSS) and high-entropy Canary Tokens for proving exfiltration. |
+| **Adaptive Orchestrator** | Uses a PAIR-style iterative loop with semantic deduplication to automatically refine and mutate attacks that were initially refused. |
+| **Decomposed Rubric Judge** | A specialized JSON-schema scorer that achieves a **0.0% False Positive Rate** by distinguishing between theoretical discussion and actionable exploits. |
+| **5 attack suites** | Jailbreak, Direct Injection, Exfiltration, Indirect Injection (RAG), Multi-Turn Escalation. |
+| **5 target adapters** | Ollama (local/free), OpenAI, Anthropic, generic HTTP endpoint, RAG pipeline simulation. |
+| **Resumable Architecture** | Checkpoint-based JSON state tracking ensures long-running adaptive campaigns never lose data upon interruption. |
+| **Zero API cost** | Full demo loop runs locally via Ollama — no tokens spent. |
+| **HTML + CLI reports** | Risk score, category breakdown, response snippets, OWASP mitigations. |
 
 ---
 
@@ -216,14 +211,14 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for full details.
 
 ## Comparison to Existing Tools
 
-| | VAJRA | NVIDIA garak | Microsoft PyRIT |
+| Feature | VAJRA | NVIDIA garak | Microsoft PyRIT |
 |---|---|---|---|
-| Setup complexity | Low | Medium | High |
-| Cost to run | $0 (Ollama) | $0 | Varies |
-| RAG/Indirect injection focus | ✅ Core feature | Partial | Partial |
-| HTML report | ✅ | ❌ | Partial |
+| Canary exfiltration proofs | ✅ | ❌ | ❌ |
+| Sandboxed exploit verifier | ✅ | ❌ | ❌ |
+| Decomposed rubric judge | ✅ | ❌ | Partial |
+| Adaptive (PAIR) orchestrator | ✅ | ❌ | ✅ |
 | Target: any HTTP endpoint | ✅ | ❌ | ❌ |
-| Positioning | Lightweight, team-sized | Research | Enterprise |
+| Open-source, local-first | ✅ | ✅ | Partial |
 
 ---
 
