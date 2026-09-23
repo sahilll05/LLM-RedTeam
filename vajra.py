@@ -1,6 +1,6 @@
 """
 VAJRA CLI — Entry point.
-Vulnerability Analysis for Jailbreak & RAG Attacks
+Vulnerability Analysis for Jailbreak & Red-team Attacks
 
 Usage:
     python vajra.py scan
@@ -34,7 +34,7 @@ BANNER_UNICODE = r"""
 [bold cyan]  ░░░█████░    ░███    ░███  ███   ░███  ░███    ░███  ░███    ░███ [/]
 [bold cyan]    ░░███      █████   █████░░████████   █████   █████ █████   █████[/]
 [bold cyan]     ░░░      ░░░░░   ░░░░░  ░░░░░░░░   ░░░░░   ░░░░░ ░░░░░   ░░░░░[/]
-[dim]  Vulnerability Analysis for Jailbreak & RAG Attacks[/]
+[dim]  Vulnerability Analysis for Jailbreak & Red-team Attacks[/]
   [dim]https://github.com/sahilll05/LLM-RedTeam[/]
 """
 
@@ -53,13 +53,13 @@ BANNER_ASCII = r"""
    \ \ / /   / ___ \/ ___ \ \ \ //   \\ 
     \ ' /   /_/   \_\_/ \_/\_'_\/       \
      \_/                                 
-  Vulnerability Analysis for Jailbreak & RAG Attacks
+  Vulnerability Analysis for Jailbreak & Red-team Attacks
   v{version} -- https://github.com/sahilll05/LLM-RedTeam
 """
 
 app = typer.Typer(
     name="vajra",
-    help="[bold cyan]VAJRA[/] -- Vulnerability Analysis for Jailbreak & RAG Attacks.",
+    help="[bold cyan]VAJRA[/] -- Vulnerability Analysis for Jailbreak & Red-team Attacks.",
     add_completion=False,
     rich_markup_mode="rich",
     invoke_without_command=True,
@@ -324,13 +324,55 @@ def validate(
         errors.append("No payloads loaded — check suite names and payload YAML files")
 
     # 4. Target health check
+    target_cfg = config.get("target", {})
+    target_type = target_cfg.get("type", "ollama")
+    model_name = target_cfg.get("model", "")
     try:
         target = load_target(config)
-        healthy = target.health_check()
-        if healthy:
-            console.print(f"[green]OK[/] Target reachable: {config['target']['type']} / {config['target'].get('model', '')}")
+
+        # For Ollama: do detailed diagnostics
+        if target_type == "ollama":
+            import httpx as _httpx
+            base_url = target_cfg.get("base_url", "http://localhost:11434").rstrip("/")
+            try:
+                resp = _httpx.get(f"{base_url}/api/tags", timeout=5)
+                if resp.status_code != 200:
+                    errors.append(
+                        f"Ollama server returned HTTP {resp.status_code}. "
+                        f"Try: [bold]ollama serve[/]"
+                    )
+                else:
+                    available = [m["name"] for m in resp.json().get("models", [])]
+                    model_ok = any(model_name in name for name in available)
+                    if not available:
+                        errors.append(
+                            f"Ollama server is running but [bold]no models are installed[/]. "
+                            f"Run: [bold]ollama pull {model_name}[/]"
+                        )
+                    elif not model_ok:
+                        errors.append(
+                            f"Model [bold cyan]{model_name}[/] not found in Ollama. "
+                            f"Available: {', '.join(available)}. "
+                            f"Run: [bold]ollama pull {model_name}[/]"
+                        )
+                    else:
+                        console.print(
+                            f"[green]OK[/] Target reachable: [bold]{target_type}[/] / "
+                            f"[bold cyan]{model_name}[/]"
+                        )
+            except _httpx.ConnectError:
+                errors.append(
+                    "Ollama server is [bold]not running[/]. Start it with: [bold]ollama serve[/]"
+                )
         else:
-            errors.append("Target health check failed — is the target running?")
+            healthy = target.health_check()
+            if healthy:
+                console.print(
+                    f"[green]OK[/] Target reachable: [bold]{target_type}[/] / "
+                    f"[bold cyan]{model_name}[/]"
+                )
+            else:
+                errors.append(f"Target health check failed for type=[bold]{target_type}[/]. Is the target running?")
     except Exception as e:
         errors.append(f"Target init error: {e}")
 
@@ -375,8 +417,23 @@ def ingest(
     cmd = [sys.executable, "scripts/ingest_hf.py",
            "--dataset", dataset,
            "--count", str(count)]
-    print(f"\nNext step: add '- {dataset}' to suites in config.yaml, then run:")
-    print(f"  python vajra.py scan")
+    if force:
+        cmd.append("--force")
+
+    console.print(f"\n[bold cyan]VAJRA[/] \u2014 Dataset Ingestion")
+    console.print(f"  Dataset : [bold]{dataset}[/]")
+    console.print(f"  Count   : [bold]{count}[/] payloads\n")
+
+    result = subprocess.run(cmd, text=True)
+
+    if result.returncode == 0:
+        console.print(f"\n[bold green]Ingestion complete![/]")
+        console.print(f"  Next step: add [bold cyan]'- {dataset}'[/] to [bold]suites:[/] in config.yaml, then run:")
+        console.print(f"  [bold]python vajra.py scan[/]")
+    else:
+        console.print(f"\n[bold red]Ingestion failed.[/] Check that 'datasets' is installed:")
+        console.print(f"  [bold]pip install datasets[/]")
+        raise typer.Exit(1)
 
 
 @app.command("benchmark")
