@@ -1,4 +1,4 @@
-# VAJRA: Vulnerability Analysis for Jailbreak & Red-team Attacks
+# VAJRA: Vulnerability Analysis for Jailbreak & RAG Attacks
 **Comprehensive Interview Guide for Cybersecurity Blue Teaming**
 
 ---
@@ -15,14 +15,14 @@ This creates a massive **False Positive crisis**. If a user asks, *"Explain the 
 ## 2. Competitor Analysis: What Makes VAJRA Unique?
 
 **Competitors:**
-* **garak**: Good coverage, but relies heavily on string matching. High false-positive rates.
+* **garak (LLM Vulnerability Scanner)**: Offers great coverage but relies heavily on naive keyword matching (e.g., `garak.detectors.mitigation.MitigationBypass`) which fails to differentiate between a model complying with a benign request vs executing a jailbreak. In our testing on 100 benign calibration prompts, Garak had a catastrophic **100% False Positive Rate (FPR)**, flagging every benign response as a jailbreak simply because the model didn't refuse.
 * **PyRIT (Microsoft)**: Excellent adaptive capabilities, but requires heavy API usage and lacks live mechanical execution of payloads.
 
 **VAJRA's Three Unique Pillars:**
 
 1. **The Sandbox Verifier (Mechanical Proof):** If the LLM generates a SQL injection payload, VAJRA doesn't just ask a judge if it looks dangerous. VAJRA strips the payload and fires it against a containerized, live vulnerable Flask application (the Sandbox). If the payload extracts data from the database, the attack is marked `VERIFIED_EXPLOIT`.
-2. **Canary Token Exfiltration:** To test if an LLM will leak its confidential system instructions (which often contain API keys or RAG data), VAJRA injects a high-entropy 32-hex Canary Token (e.g., `VAJRA-8f4b...`) into the system prompt. Success is evaluated via a 100% accurate exact-string match in the output.
-3. **Decomposed Rubric Judge:** A specialized scoring engine that uses a 4-question JSON schema to evaluate responses. It forces the judge to differentiate between *theoretical discussion* (safe) and *actionable exploits* (unsafe). This brought our False Positive Rate (FPR) down to **0.0%**.
+2. **Canary Token Exfiltration (RAG Attacks):** To test if an LLM will leak its confidential system instructions (which often contain API keys or RAG data), VAJRA injects a high-entropy 32-hex Canary Token (e.g., `VAJRA-8f4b...`) into the system prompt. Success is evaluated via a 100% accurate exact-string match in the output. This is directly aligned with the "RAG Attacks" in our acronym, proving how vulnerable enterprise RAG deployments are to data extraction.
+3. **Decomposed Rubric Judge:** A specialized scoring engine that uses a 4-question JSON schema to evaluate responses. It forces the judge to differentiate between *theoretical discussion* (safe) and *actionable exploits* (unsafe). This brought our False Positive Rate (FPR) down to **0.0%** (compared to Garak's 100%).
 
 ---
 
@@ -59,8 +59,9 @@ Our research paper evaluated **Llama-3-8B** and **Gemma-3-12B**. The results tel
 
 1. **Static Jailbreaks are Dead:** Both models achieved a **0.0% Attack Success Rate (ASR)** against static (single-shot) jailbreaks. Modern alignment (RLHF) is highly effective at stopping basic manipulation.
 2. **Actionable Exploits are a Threat:** Gemma-3-12B had a **14.3% ASR** for generating actionable code-injection payloads.
-3. **Exfiltration is the Weakest Link:** Both models failed catastrophically at protecting their system prompts. Llama-3 leaked the system prompt **85.7%** of the time, and Gemma-3 leaked it **57.1%** of the time. We proved mathematically that placing secrets inline or as a prefix is less secure than placing them in XML tags or headers.
-4. **The Adaptive PAIR Loop Discovery:** Using our Adaptive Orchestrator (which uses an "Attacker LLM" to iteratively rewrite failed prompts), we completely bypassed Gemma-3's defenses on a jailbreak attack at **Iteration 3**. 
+3. **RAG Attacks / Exfiltration is the Weakest Link:** Both models failed catastrophically at protecting their system prompts (RAG contexts). Llama-3 leaked the system prompt **85.7%** of the time, and Gemma-3 leaked it **57.1%** of the time. We proved mathematically that placing secrets inline or as a prefix is less secure than placing them in XML tags or headers.
+4. **Garak Baseline Comparison (100% vs 0% FPR):** We proved that heuristic scoring is fundamentally broken for red-teaming. Garak's `MitigationBypass` detector flagged 100 out of 100 benign prompts as "jailbreaks" (100% FPR) because the model didn't use refusal language. VAJRA correctly scored 0 out of 100 benign prompts as jailbreaks (0.0% FPR) using its mechanical logic. 
+5. **The Adaptive PAIR Loop Discovery:** Using our Adaptive Orchestrator (which uses an "Attacker LLM" to iteratively rewrite failed prompts), we completely bypassed Gemma-3's defenses on a jailbreak attack at **Iteration 3**. 
    * *Interview Talking Point:* "Our research proves that static testing is insufficient. 5 rounds of static testing missed the vulnerability, but a persistent, adaptive adversary compromised the model at iteration 3. Blue teams must simulate persistent threats."
 
 ---
