@@ -82,7 +82,3 @@ scripts/
 
 # ─── Research ─────────────────────────────────────────────
 research/
-
-# ─── Private/Local IDE Folders ────────────────────────────
-.hermes/
-.gemini/
