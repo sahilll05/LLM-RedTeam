@@ -1,7 +1,7 @@
-# VAJRA — Vulnerability Analysis for Jailbreak & RAG Attacks
+# VAJRA: Zero-Observed False Positives in LLM Red-Teaming via Mechanical Ground-Truth Verification
 
 <p align="center">
-  <img src="logo.png" alt="VAJRA Logo" width="600">
+  <img src="assets/logo.png" alt="VAJRA Logo" width="600">
 </p>
 
 > **VAJRA** — *Vulnerability Analysis for Jailbreak & RAG Attacks*

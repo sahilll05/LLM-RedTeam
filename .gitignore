@@ -75,7 +75,11 @@ payloads/calibration/
 data/young_moody_bank.json
 
 # Documentation specific to implementation
-docs/
+docs/vajra_info.md
+docs/VAJRA-Master-Plan.md
+docs/implementation_plan.md
+docs/implementation_paln.md
+docs/IMPROVEMENT_GUIDE.md
 
 # ─── Scripts ──────────────────────────────────────────────
 scripts/
